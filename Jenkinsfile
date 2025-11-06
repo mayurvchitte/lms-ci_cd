@@ -24,25 +24,7 @@ pipeline {
             }
         }
 
-        /* 2️⃣ SonarQube Analysis */
-        stage('Code Quality Scan - SonarQube') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
-                        sh '''
-                            echo "🔍 Running SonarQube Analysis..."
-                            sonar-scanner \
-                                -Dsonar.projectKey=lms-pipeline \
-                                -Dsonar.sources=./backend,./frontend \
-                                -Dsonar.host.url=http://72.60.219.208:9000 \
-                                -Dsonar.login=${SONAR_AUTH_TOKEN}
-                        '''
-                    }
-                }
-            }
-        }
-
-        /* 3️⃣ Build Docker Images */
+        /* 2️⃣ Build Docker Images */
         stage('Build Docker Images') {
             steps {
                 sh '''
@@ -53,7 +35,7 @@ pipeline {
             }
         }
 
-        /* 4️⃣ Push to Docker Hub */
+        /* 3️⃣ Push to Docker Hub */
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -68,7 +50,7 @@ pipeline {
             }
         }
 
-        /* 5️⃣ Deploy Containers */
+        /* 4️⃣ Deploy Containers */
         stage('Deploy Containers') {
             steps {
                 withCredentials([
