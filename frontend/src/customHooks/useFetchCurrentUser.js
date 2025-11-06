@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import axios from 'axios'
-import { setUserData } from '../redux/userSlice'
+import { setUserData, startFetchingUser } from '../redux/userSlice'
 import { serverUrl } from '../App'
 
 const useFetchCurrentUser = () => {
@@ -9,8 +9,8 @@ const useFetchCurrentUser = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
+      dispatch(startFetchingUser())  // ✅ start fetching
       try {
-        // Align with backend route naming: /api/user/currentuser
         const response = await axios.get(serverUrl + '/api/user/currentuser', { withCredentials: true })
         const user = response.data?.user || response.data
         dispatch(setUserData(user))
@@ -25,3 +25,4 @@ const useFetchCurrentUser = () => {
 }
 
 export default useFetchCurrentUser
+
