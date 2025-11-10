@@ -7,13 +7,15 @@ pipeline {
     }
 
     environment {
+        COMPOSE_FILE     = 'docker-compose.yml'
         DOCKER_HUB_USER  = 'mahesh1925'
         BACKEND_IMAGE    = 'mahesh1925/lms-backend'
         FRONTEND_IMAGE   = 'mahesh1925/lms-frontend'
-        COMPOSE_FILE     = 'docker-compose.yml'
     }
 
     stages {
+
+        /* 1️⃣ Checkout the main LMS repository */
         stage('Checkout Code') {
             steps {
                 git branch: 'master',
@@ -22,6 +24,7 @@ pipeline {
             }
         }
 
+        /* 2️⃣ Build Docker images for backend & frontend */
         stage('Build Docker Images') {
             steps {
                 sh '''
@@ -32,6 +35,7 @@ pipeline {
             }
         }
 
+        /* 3️⃣ Push images to Docker Hub */
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(
@@ -50,6 +54,7 @@ pipeline {
             }
         }
 
+        /* 4️⃣ Deploy to Hostinger VM using Docker Compose */
         stage('Deploy Containers') {
             steps {
                 withCredentials([
@@ -58,21 +63,31 @@ pipeline {
                 ]) {
                     sh '''
                         echo "🧩 Deploying containers..."
-                        mkdir -p /app/lms
-                        cp "$BACKEND_ENV" backend/.env
-                        cp "$FRONTEND_ENV" frontend/.env
+
+                        # Ensure the workspace & env files are writable
+                        mkdir -p /app/lms || sudo mkdir -p /app/lms
+
+                        # Copy environment files with safe fallback
+                        cp $BACKEND_ENV backend/.env 2>/dev/null || sudo cp $BACKEND_ENV backend/.env
+                        cp $FRONTEND_ENV frontend/.env 2>/dev/null || sudo cp $FRONTEND_ENV frontend/.env
+
+                        echo "♻️ Restarting containers via Docker Compose..."
                         docker compose -f ${COMPOSE_FILE} down || true
                         docker compose -f ${COMPOSE_FILE} up -d --force-recreate --remove-orphans
-                        echo "✅ Deployment completed!"
+
+                        echo "✅ Deployment completed successfully!"
                     '''
                 }
             }
         }
     }
 
+    /* 🪶 Post-build notifications */
     post {
         success {
             echo "✅ Build & Deployment Successful!"
+            echo "Frontend → ${FRONTEND_IMAGE}:latest"
+            echo "Backend  → ${BACKEND_IMAGE}:latest"
         }
         failure {
             echo "❌ Build Failed — Check Jenkins Logs."
