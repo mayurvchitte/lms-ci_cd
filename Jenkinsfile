@@ -78,6 +78,9 @@ pipeline {
                         cp $BACKEND_ENV backend/.env 2>/dev/null || sudo cp $BACKEND_ENV backend/.env
                         cp $FRONTEND_ENV frontend/.env 2>/dev/null || sudo cp $FRONTEND_ENV frontend/.env
 
+                        echo "♻️ Cleaning up old containers..."
+                        docker rm -f lms-backend lms-frontend 2>/dev/null || true
+
                         echo "♻️ Recreating containers..."
                         docker compose -f ${COMPOSE_FILE} down || true
                         docker compose -f ${COMPOSE_FILE} up -d --force-recreate --remove-orphans
