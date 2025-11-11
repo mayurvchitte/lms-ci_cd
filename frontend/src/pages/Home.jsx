@@ -25,11 +25,15 @@ function Home() {
       <Nav />
 
       {/* 🟣 Udemy-style sliding hero banners */}
+<<<<<<< Updated upstream
 <<<<<<< HEAD
       <HeroSection />
 =======
       <div id="explore-courses"><HeroSection /></div>
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+      <div id="explore-courses"><HeroSection /></div>
+>>>>>>> Stashed changes
 
       {/* Buttons below banner */}
       <div className="flex flex-col items-center justify-center gap-6 flex-wrap px-4 py-10 bg-gray-50">
@@ -87,10 +91,13 @@ function Home() {
           )}
         </div>
       </div>
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 
 =======
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+>>>>>>> Stashed changes
       {/* 🟣 Udemy-style course slider */}
       <SkillsSection />
 
@@ -98,6 +105,7 @@ function Home() {
       <Logos />
       <ExploreCourses />
       <Cardspage />
+<<<<<<< Updated upstream
 <<<<<<< HEAD
       <About />
       <ReviewPage />
@@ -107,12 +115,21 @@ function Home() {
       <ReviewPage />
       <div id="contact-us"><Footer /></div>
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+      <div id="about-us"><About /></div>
+      <ReviewPage />
+      <div id="contact-us"><Footer /></div>
+>>>>>>> Stashed changes
     </div>
   );
 }
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 export default Home;
 =======
 export default Home;
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+export default Home;
+>>>>>>> Stashed changes

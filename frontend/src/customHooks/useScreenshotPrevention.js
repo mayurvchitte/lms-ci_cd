@@ -46,11 +46,15 @@ const useScreenshotPrevention = (lectureId = null) => {
               // ignore logout errors
             }
             // Redirect to login page to clear frontend state
+<<<<<<< Updated upstream
 <<<<<<< HEAD
             window.location.replace('/login');
 =======
             window.location.replace('/');
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+            window.location.replace('/');
+>>>>>>> Stashed changes
           }, 1400);
         } catch (err) {
           // reporting failed; still log error but don't force logout
@@ -73,11 +77,15 @@ const useScreenshotPrevention = (lectureId = null) => {
               // ignore logout errors
             }
             // Redirect to login page to clear frontend state
+<<<<<<< Updated upstream
 <<<<<<< HEAD
             window.location.replace('/login');
 =======
             window.location.replace('/');
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+            window.location.replace('/');
+>>>>>>> Stashed changes
           }, 1400);
         } catch (err) {
           // reporting failed; still log error but don't force logout
@@ -104,6 +112,7 @@ const useScreenshotPrevention = (lectureId = null) => {
         showWarning('Printing is disabled.');
       }
       // Prevent Ctrl+S (Save Page)
+<<<<<<< Updated upstream
 <<<<<<< HEAD
       if (e.ctrlKey && e.key === 's') {
         e.preventDefault();
@@ -120,6 +129,8 @@ const useScreenshotPrevention = (lectureId = null) => {
         showWarning('Inspecting elements is disabled.');
       }
 =======
+=======
+>>>>>>> Stashed changes
       // if (e.ctrlKey && e.key === 's') {
       //   e.preventDefault();
       //   showWarning('Saving is disabled.');
@@ -134,7 +145,10 @@ const useScreenshotPrevention = (lectureId = null) => {
       //   e.preventDefault();
       //   showWarning('Inspecting elements is disabled.');
       // }
+<<<<<<< Updated upstream
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+>>>>>>> Stashed changes
       // Prevent F12 (Developer Tools)
       if (e.key === 'F12') {
         e.preventDefault();
@@ -210,11 +224,15 @@ const useScreenshotPrevention = (lectureId = null) => {
     };
 
     // Add event listeners to window for better capture
+<<<<<<< Updated upstream
 <<<<<<< HEAD
     window.addEventListener('contextmenu', handleContextMenu);
 =======
     //window.addEventListener('contextmenu', handleContextMenu);
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+    //window.addEventListener('contextmenu', handleContextMenu);
+>>>>>>> Stashed changes
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('selectstart', handleSelectStart);
@@ -274,11 +292,15 @@ const useScreenshotPrevention = (lectureId = null) => {
 
     // Cleanup on unmount
     return () => {
+<<<<<<< Updated upstream
 <<<<<<< HEAD
       window.removeEventListener('contextmenu', handleContextMenu);
 =======
       //window.removeEventListener('contextmenu', handleContextMenu);
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+      //window.removeEventListener('contextmenu', handleContextMenu);
+>>>>>>> Stashed changes
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('selectstart', handleSelectStart);

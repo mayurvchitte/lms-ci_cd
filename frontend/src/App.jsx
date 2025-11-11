@@ -36,6 +36,7 @@ import './customHooks/useScreenshotPrevention'
 import './utils/axiosSetup'
 import useScreenshotPrevention from './customHooks/useScreenshotPrevention'
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 //export const serverUrl = "http://localhost:8000"
 export const serverUrl = "http://72.60.219.208:8000"
@@ -45,6 +46,10 @@ export const serverUrl = "http://72.60.219.208:8000"
 export const serverUrl = "https://techsproutlms.com";
 
 >>>>>>> 4e6ce7a45afa8ab3cf2e653b38e91acc23b187bf
+=======
+export const serverUrl = "http://localhost:8000"
+// export const serverUrl = "http://72.60.219.208:8000"
+>>>>>>> Stashed changes
 
 
 function App() {

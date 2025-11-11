@@ -22,9 +22,10 @@ import notesRouter from "./routes/notesRoute.js";   // ✅ Correct import
 const port = process.env.PORT || 8000
 const app = express()
 
-//const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173"
-const FRONTEND_URL_2 = process.env.FRONTEND_URL_2 || "http://localhost:5174"
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://72.60.219.208"
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173"
+const FRONTEND_URL_2 = process.env.FRONTEND_URL_2 || "http://localhost:5175"
+
+// const FRONTEND_URL = process.env.FRONTEND_URL || "http://72.60.219.208"
 const API_SELF = process.env.API_SELF || "http://localhost:" + port
 const PROD_URL = process.env.PROD_URL || "https://techsproutlms.com"
 
