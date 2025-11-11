@@ -31,8 +31,8 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data } = await axios.get('/api/users');
-      setUsers(data.users);
+      const { data } = await axios.get('/api/admin/users');
+      setUsers(data);
     } catch (error) {
       console.error("Failed to fetch users", error);
       // Mock data for demonstration
