@@ -43,11 +43,10 @@ app.set("trust proxy", 1);
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Production-safe CORS
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow API tools
+      if (!origin) return callback(null, true);
       const normalized = origin.replace(/\/$/, "");
       const isAllowed = allowedOrigins.some(
         (url) => normalized === url || normalized.startsWith(url)
@@ -108,30 +107,29 @@ io.on("connection", (socket) => {
   });
 
   socket.on("ice-candidate", (data) => {
-    socket
-      .to(data.roomId)
-      .emit("ice-candidate", { candidate: data.candidate, sender: socket.id });
+    socket.to(data.roomId).emit("ice-candidate", {
+      candidate: data.candidate,
+      sender: socket.id,
+    });
   });
 
   socket.on("send-message", (data) => {
-    socket
-      .to(data.roomId)
-      .emit("receive-message", {
-OAOAOA        message: data.message,
-OA        sender: socket.id,
-OAOAOAOA        timestamp: new Date(),
-OA      });
-OAOA  });
-OAOA
-OA  socket.on("disconnect", () => {
-OAOAOA    console.log("User disconnected:", socket.id);
+    socket.to(data.roomId).emit("receive-message", {
+      message: data.message,
+      sender: socket.id,
+      timestamp: new Date(),
+    });
   });
-OBOBOBOB});
 
-OA// ========================
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
+// ========================
 // 🔹 Start Server
-OA// ========================
-OAhttpServer.listen(port, () => {
+// ========================
+httpServer.listen(port, () => {
   console.log(`🚀 Server started on port ${port}`);
   connectDb();
 });
