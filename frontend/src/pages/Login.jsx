@@ -4,6 +4,7 @@ import google from '../assets/google.jpg';
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { MdOutlineRemoveRedEye, MdRemoveRedEye } from "react-icons/md";
+import { IoArrowBack } from "react-icons/io5"; // added back arrow icon
 import { useNavigate, useLocation } from 'react-router-dom';
 import GoogleAuthService from '../../utils/GoogleAuth';
 import { toast } from 'react-toastify';
@@ -16,18 +17,19 @@ function Login() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
 
   // Save the path user wanted to visit before login
-  const redirectPath = location.state?.from || "/";
+  const redirectPath = location.state?.from?.pathname || "/";
 
   const handleLogin = async () => {
     setLoading(true);
     try {
       const result = await axios.post(
-        serverUrl + "/api/auth/login",
+        `${serverUrl}/api/auth/login`,
         { email, password },
         { withCredentials: true }
       );
@@ -36,8 +38,8 @@ function Login() {
       setLoading(false);
       toast.success("Login Successfully");
 
-      // ✅ redirect to previous or default page
-      navigate(redirectPath, { replace: true });
+      // Redirect to the page user wanted
+      navigate(redirectPath, { replace: true }); // replace keeps history clean
     } catch (error) {
       console.log(error);
       setLoading(false);
@@ -60,11 +62,23 @@ function Login() {
   return (
     <div className='bg-[#dddbdb] w-[100vw] h-[100vh] flex items-center justify-center flex-col gap-3'>
       <form
-        className='w-[90%] md:w-200 h-150 bg-[white] shadow-xl rounded-2xl flex'
+        className='w-[90%] md:w-200 h-150 bg-[white] shadow-xl rounded-2xl flex relative'
         onSubmit={(e) => e.preventDefault()}
       >
-        <div className='md:w-[50%] w-[100%] h-[100%] flex flex-col items-center justify-center gap-4'>
-          <div>
+        {/* Left Side (Form Section) */}
+        <div className='md:w-[50%] w-[100%] h-[100%] flex flex-col items-center justify-center gap-4 relative'>
+
+          {/* 👇 Back Arrow Button */}
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="absolute top-5 left-5 text-black flex items-center gap-1 hover:text-gray-700 transition-all"
+          >
+            <IoArrowBack size={24} />
+            <span className="text-sm font-medium hidden sm:inline">Home</span>
+          </button>
+
+          <div className='mt-8'>
             <h1 className='font-semibold text-[black] text-2xl'>Welcome back</h1>
             <h2 className='text-[#999797] text-[18px]'>Login to your account</h2>
           </div>
@@ -128,17 +142,17 @@ function Login() {
           </div>
 
           <div
-            className='w-[80%] h-[40px] border-1 border-[#d3d2d2] rounded-[5px] flex items-center justify-center'
+            className='w-[80%] h-[40px] border-1 border-[#d3d2d2] rounded-[5px] flex items-center justify-center cursor-pointer'
             onClick={googleLogin}
           >
             <img src={google} alt="" className='w-[25px]' />
-            <span className='text-[18px] text-gray-500'>google</span>
+            <span className='text-[18px] text-gray-500'>Google</span>
           </div>
 
           <div className='text-[#6f6f6f]'>
             Don't have an account?{" "}
             <span
-              className='underline underline-offset-1 text-[black]'
+              className='underline underline-offset-1 text-[black] cursor-pointer'
               onClick={() => navigate("/signup")}
             >
               Sign up
@@ -146,8 +160,9 @@ function Login() {
           </div>
         </div>
 
+        {/* Right Side (Logo Section) */}
         <div className='w-[50%] h-[100%] rounded-r-2xl bg-[black] md:flex items-center justify-center flex-col hidden'>
-          <img src={logo} className='w-30 shadow-2xl' alt="" />
+          <img src={logo} className='w-30 shadow-2xl' alt="Logo" />
           <span className='text-[white] text-2xl'>SKILL SPHERE</span>
         </div>
       </form>

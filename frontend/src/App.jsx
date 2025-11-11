@@ -1,73 +1,73 @@
-import React, { useEffect } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { ToastContainer } from 'react-toastify';
-import axios from 'axios';
+import React, { useEffect } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { ToastContainer } from 'react-toastify'
+import axios from 'axios'
 
-import Home from './pages/Home';
-import Login from './pages/Login';
-import SignUp from './pages/SignUp';
-import Profile from './pages/Profile';
-import EditProfile from './pages/EditProfile';
-import Dashboard from './pages/admin/Dashboard';
-import Courses from './pages/admin/Courses';
-import AllCouses from './pages/AllCouses';
-import AddCourses from './pages/admin/AddCourses';
-import CreateCourse from './pages/admin/CreateCourse';
-import CreateLecture from './pages/admin/CreateLecture';
-import EditLecture from './pages/admin/EditLecture';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import UserManagement from './pages/admin/UserManagement';
-import SystemSettings from './pages/admin/SystemSettings';
-import LiveStream from './components/LiveStream';
-import Chatbot from './components/ChatBot';
-import ViewCourse from './pages/ViewCourse';
-import EnrolledCourse from './pages/EnrolledCourse';
-import ViewLecture from './pages/ViewLecture';
-import SearchWithAi from './pages/SearchWithAi';
-import Wishlist from './pages/Wishlist';
-import Notifications from './pages/Notifications';
-import ForgotPassword from './pages/ForgotPassword';
-import AuthCallback from './pages/AuthCallback';
+import Home from './pages/Home'
+import Login from './pages/Login'
+import SignUp from './pages/SignUp'
+import Profile from './pages/Profile'
+import EditProfile from './pages/EditProfile'
+import Dashboard from './pages/admin/Dashboard'
+import Courses from './pages/admin/Courses'
+import AllCouses from './pages/AllCouses'
+import AddCourses from './pages/admin/AddCourses'
+import CreateCourse from './pages/admin/CreateCourse'
+import CreateLecture from './pages/admin/CreateLecture'
+import EditLecture from './pages/admin/EditLecture'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import UserManagement from './pages/admin/UserManagement'
+import SystemSettings from './pages/admin/SystemSettings'
+import LiveStream from './components/LiveStream'
+import Chatbot from './components/ChatBot'
+import ViewCourse from './pages/ViewCourse'
+import EnrolledCourse from './pages/EnrolledCourse'
+import ViewLecture from './pages/ViewLecture'
+import SearchWithAi from './pages/SearchWithAi'
+import Wishlist from './pages/Wishlist'
+import Notifications from './pages/Notifications'
+import ForgotPassword from './pages/ForgotPassword'
+import AuthCallback from './pages/AuthCallback'
+import ProtectedRoute from './components/ProtectedRoute'
 
-import ScrollToTop from './components/ScrollToTop';
-import { setUserData } from './redux/userSlice';
-import './customHooks/useScreenshotPrevention';
-import './utils/axiosSetup';
-import useScreenshotPrevention from './customHooks/useScreenshotPrevention';
+import ScrollToTop from './components/ScrollToTop'
+import { setUserData } from './redux/userSlice'
+import './customHooks/useScreenshotPrevention'
+import './utils/axiosSetup'
+import useScreenshotPrevention from './customHooks/useScreenshotPrevention'
 
-// ✅ Use production API endpoint
-export const serverUrl = "https://techsproutlms.com";
-// For local testing, use:
-// export const serverUrl = "http://localhost:8000";
+export const serverUrl = "http://localhost:8000"
+// export const serverUrl = "http://72.60.219.208:8000"
+// export const serverUrl = "https://techsproutlms.com";
 
 function App() {
-  const dispatch = useDispatch();
-  const location = useLocation();
-  const { userData, isFetchingUser } = useSelector(state => state.user);
+  const dispatch = useDispatch()
+  const location = useLocation()
+  const { userData, isFetchingUser } = useSelector(state => state.user)
 
-  useScreenshotPrevention();
+  useScreenshotPrevention()
 
   // Fetch current user
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(serverUrl + '/api/user/currentuser', { withCredentials: true });
-        dispatch(setUserData(res.data?.user || res.data));
+        const res = await axios.get(serverUrl + '/api/user/currentuser', { withCredentials: true })
+        dispatch(setUserData(res.data?.user || res.data))
       } catch (err) {
-        dispatch(setUserData(null));
+        dispatch(setUserData(null))
       }
-    };
-    fetchUser();
-  }, [dispatch]);
+    }
+    fetchUser()
+  }, [dispatch])
 
+  // Prevent white page while fetching user
   if (isFetchingUser) {
-    return <div className="flex items-center justify-center h-screen text-xl">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen text-xl">Loading...</div>
   }
 
-  const isCoursePage =
-    location.pathname.startsWith("/viewcourse") ||
-    location.pathname.startsWith("/viewlecture");
+  // Detect if current page is a course/lecture page
+  const isCoursePage = location.pathname.startsWith("/viewcourse") || location.pathname.startsWith("/viewlecture")
 
   return (
     <>
@@ -87,34 +87,71 @@ function App() {
         <Route path='/forgotpassword' element={<ForgotPassword />} />
         <Route path='/auth/callback' element={<AuthCallback />} />
 
-        {/* Student routes */}
-        <Route path='/profile' element={userData ? <Profile /> : <Navigate to='/login' />} />
-        <Route path='/editprofile' element={userData ? <EditProfile /> : <Navigate to='/login' />} />
-        <Route path='/allcourses' element={userData ? <AllCouses /> : <Navigate to='/login' />} />
-        <Route path='/viewcourse/:courseId' element={userData ? <ViewCourse /> : <Navigate to='/login' />} />
-        <Route path='/enrolledcourses' element={userData ? <EnrolledCourse /> : <Navigate to='/login' />} />
-        <Route path='/viewlecture/:courseId' element={userData ? <ViewLecture /> : <Navigate to='/login' />} />
-        <Route path='/live/:lectureId' element={userData ? <LiveStream /> : <Navigate to='/login' />} />
-        <Route path='/searchwithai' element={userData ? <SearchWithAi /> : <Navigate to='/login' />} />
-        <Route path='/wishlist' element={userData?.role === 'student' ? <Wishlist /> : <Navigate to='/login' />} />
-        <Route path='/notifications' element={userData ? <Notifications /> : <Navigate to='/login' />} />
+        {/* Protected student routes */}
+        <Route path='/profile' element={
+          <ProtectedRoute allowedRoles={['student', 'educator', 'admin']}><Profile /></ProtectedRoute>
+        } />
+        <Route path='/editprofile' element={
+          <ProtectedRoute allowedRoles={['student', 'educator', 'admin']}><EditProfile /></ProtectedRoute>
+        } />
+        <Route path='/allcourses' element={
+          <ProtectedRoute allowedRoles={['student', 'educator', 'admin']}><AllCouses /></ProtectedRoute>
+        } />
+        <Route path='/viewcourse/:courseId' element={
+          <ProtectedRoute allowedRoles={['student', 'educator', 'admin']}><ViewCourse /></ProtectedRoute>
+        } />
+        <Route path='/enrolledcourses' element={
+          <ProtectedRoute allowedRoles={['student']}><EnrolledCourse /></ProtectedRoute>
+        } />
+        <Route path='/viewlecture/:courseId' element={
+          <ProtectedRoute allowedRoles={['student', 'educator']}><ViewLecture /></ProtectedRoute>
+        } />
+        <Route path='/live/:lectureId' element={
+          <ProtectedRoute allowedRoles={['student', 'educator']}><LiveStream /></ProtectedRoute>
+        } />
+        <Route path='/searchwithai' element={
+          <ProtectedRoute allowedRoles={['student']}><SearchWithAi /></ProtectedRoute>
+        } />
+        <Route path='/wishlist' element={
+          <ProtectedRoute allowedRoles={['student']}><Wishlist /></ProtectedRoute>
+        } />
+        <Route path='/notifications' element={
+          <ProtectedRoute allowedRoles={['student', 'educator', 'admin']}><Notifications /></ProtectedRoute>
+        } />
 
         {/* Educator routes */}
-        <Route path='/dashboard' element={userData?.role === 'educator' ? <Dashboard /> : <Navigate to='/login' />} />
-        <Route path='/courses' element={userData?.role === 'educator' ? <Courses /> : <Navigate to='/login' />} />
-        <Route path='/addcourses/:courseId' element={userData?.role === 'educator' ? <AddCourses /> : <Navigate to='/login' />} />
-        <Route path='/createcourses' element={userData?.role === 'educator' ? <CreateCourse /> : <Navigate to='/login' />} />
-        <Route path='/createlecture/:courseId' element={userData?.role === 'educator' ? <CreateLecture /> : <Navigate to='/login' />} />
-        <Route path='/editlecture/:courseId/:lectureId' element={userData?.role === 'educator' ? <EditLecture /> : <Navigate to='/login' />} />
+        <Route path='/dashboard' element={
+          <ProtectedRoute allowedRoles={['educator']}><Dashboard /></ProtectedRoute>
+        } />
+        <Route path='/courses' element={
+          <ProtectedRoute allowedRoles={['educator']}><Courses /></ProtectedRoute>
+        } />
+        <Route path='/addcourses/:courseId' element={
+          <ProtectedRoute allowedRoles={['educator']}><AddCourses /></ProtectedRoute>
+        } />
+        <Route path='/createcourses' element={
+          <ProtectedRoute allowedRoles={['educator']}><CreateCourse /></ProtectedRoute>
+        } />
+        <Route path='/createlecture/:courseId' element={
+          <ProtectedRoute allowedRoles={['educator']}><CreateLecture /></ProtectedRoute>
+        } />
+        <Route path='/editlecture/:courseId/:lectureId' element={
+          <ProtectedRoute allowedRoles={['educator']}><EditLecture /></ProtectedRoute>
+        } />
 
         {/* Admin routes */}
-        <Route path='/admin/dashboard' element={userData?.role === 'admin' ? <AdminDashboard /> : <Navigate to='/login' />} />
-        <Route path='/admin/users' element={userData?.role === 'admin' ? <UserManagement /> : <Navigate to='/login' />} />
-        <Route path='/admin/settings' element={userData?.role === 'admin' ? <SystemSettings /> : <Navigate to='/login' />} />
+        <Route path='/admin/dashboard' element={
+          <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
+        } />
+        <Route path='/admin/users' element={
+          <ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>
+        } />
+        <Route path='/admin/settings' element={
+          <ProtectedRoute allowedRoles={['admin']}><SystemSettings /></ProtectedRoute>
+        } />
       </Routes>
     </>
-  );
+  )
 }
 
-export default App;
-
+export default App
