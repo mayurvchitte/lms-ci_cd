@@ -1,21 +1,21 @@
 pipeline {
     agent any
 
-    environment {
-        // Docker Hub
-        DOCKER_USER = 'mahesh1925'
-        DOCKER_BACKEND_IMAGE = "${DOCKER_USER}/lms-backend:latest"
-        DOCKER_FRONTEND_IMAGE = "${DOCKER_USER}/lms-frontend:latest"
+    tools {
+        jdk 'java21'
+        nodejs 'NodeJS'
+    }
 
-        // Paths and files
-        COMPOSE_FILE = 'docker-compose.yml'
+    environment {
+        COMPOSE_FILE     = 'docker-compose.yml'
+        DOCKER_HUB_USER  = 'mahesh1925'
+        BACKEND_IMAGE    = 'mahesh1925/lms-backend'
+        FRONTEND_IMAGE   = 'mahesh1925/lms-frontend'
     }
 
     stages {
 
-        /* --------------------------------------------------
-         * 1. Checkout from GitHub
-         * -------------------------------------------------- */
+        /* 1️⃣ Checkout the main LMS CI/CD repository */
         stage('Checkout Code') {
             steps {
                 git branch: 'master',
@@ -24,77 +24,80 @@ pipeline {
             }
         }
 
-        /* --------------------------------------------------
-         * 2. Build Docker Images
-         * -------------------------------------------------- */
+        /* 2️⃣ Build Docker images for backend & frontend */
         stage('Build Docker Images') {
             steps {
-                echo '🏗️ Building Docker images...'
-
                 sh '''
-                docker build -t ${DOCKER_BACKEND_IMAGE} -f backend/Dockerfile.backend backend
-                docker build -t ${DOCKER_FRONTEND_IMAGE} -f frontend/Dockerfile.frontend frontend
+                    echo "🏗️ Building Docker images..."
+                    docker build -t ${BACKEND_IMAGE}:latest -f backend/Dockerfile.backend backend
+                    docker build -t ${FRONTEND_IMAGE}:latest -f frontend/Dockerfile.frontend frontend
                 '''
             }
         }
 
-        /* --------------------------------------------------
-         * 3. Push to Docker Hub
-         * -------------------------------------------------- */
+        /* 3️⃣ Push images to Docker Hub */
         stage('Push to Docker Hub') {
-            environment {
-                DOCKER_PASS = credentials('docker-hub-pass')
-            }
             steps {
-                echo '🔑 Logging into Docker Hub...'
-                sh '''
-                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                docker push ${DOCKER_BACKEND_IMAGE}
-                docker push ${DOCKER_FRONTEND_IMAGE}
-                docker logout
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                        echo "🔑 Logging into Docker Hub..."
+                        echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+
+                        echo "⬆️ Pushing backend image..."
+                        docker push ${BACKEND_IMAGE}:latest
+
+                        echo "⬆️ Pushing frontend image..."
+                        docker push ${FRONTEND_IMAGE}:latest
+
+                        docker logout
+                    '''
+                }
             }
         }
 
-        /* --------------------------------------------------
-         * 4. Deploy Containers via Docker Compose
-         * -------------------------------------------------- */
+        /* 4️⃣ Deploy to Hostinger VM using Docker Compose */
         stage('Deploy Containers') {
-            environment {
-                BACKEND_ENV = credentials('backend-env')
-                FRONTEND_ENV = credentials('frontend-env')
-            }
             steps {
-                echo '🧩 Deploying containers...'
-                sh '''
-                mkdir -p /app/lms
+                withCredentials([
+                    file(credentialsId: 'backend-env', variable: 'BACKEND_ENV'),
+                    file(credentialsId: 'frontend-env', variable: 'FRONTEND_ENV')
+                ]) {
+                    sh '''
+                        echo "🧩 Deploying containers..."
 
-                # Copy environment files from Jenkins credentials
-                cp $BACKEND_ENV backend/.env || true
-                cp $FRONTEND_ENV frontend/.env || true
+                        # Ensure workspace exists
+                        mkdir -p /app/lms || sudo mkdir -p /app/lms
 
-                echo "🧹 Cleaning up old containers..."
-                docker rm -f lms-backend lms-frontend || true
+                        # Copy environment files safely
+                        cp $BACKEND_ENV backend/.env 2>/dev/null || sudo cp $BACKEND_ENV backend/.env
+                        cp $FRONTEND_ENV frontend/.env 2>/dev/null || sudo cp $FRONTEND_ENV frontend/.env
 
-                echo "♻️ Restarting containers via Docker Compose..."
-                docker compose -f ${COMPOSE_FILE} down || true
-                docker compose -f ${COMPOSE_FILE} up -d --force-recreate --remove-orphans
+                        echo "♻️ Recreating containers..."
+                        docker compose -f ${COMPOSE_FILE} down || true
+                        docker compose -f ${COMPOSE_FILE} up -d --force-recreate --remove-orphans
 
-                echo "✅ Deployment successful!"
-                '''
+                        echo "✅ Deployment completed successfully!"
+                    '''
+                }
             }
         }
     }
 
-    /* --------------------------------------------------
-     * 5. Post Actions
-     * -------------------------------------------------- */
+    /* 🪶 Post Actions */
     post {
         success {
-            echo '✅ Build and Deployment Completed Successfully!'
+            echo "✅ Build & Deployment succeeded!"
+            echo "Frontend: ${FRONTEND_IMAGE}:latest"
+            echo "Backend: ${BACKEND_IMAGE}:latest"
         }
         failure {
-            echo '❌ Build Failed — Check Jenkins Logs.'
+            echo "❌ Build Failed — Check Jenkins Logs."
         }
     }
 }
