@@ -32,14 +32,15 @@ import AuthCallback from './pages/AuthCallback'
 import ProtectedRoute from './components/ProtectedRoute'
 
 import ScrollToTop from './components/ScrollToTop'
-import { setUserData } from './redux/userSlice'
+import { setUserData, startFetchingUser } from './redux/userSlice'
 import './customHooks/useScreenshotPrevention'
 import './utils/axiosSetup'
 import useScreenshotPrevention from './customHooks/useScreenshotPrevention'
 
 // export const serverUrl = "http://localhost:8000"
 // export const serverUrl = "http://72.60.219.208:8000"
- export const serverUrl = "https://techsproutlms.com";
+// export const serverUrl = "https://techsproutlms.com";
+export const serverUrl = "http://localhost:8000";
 
 function App() {
   const dispatch = useDispatch()
@@ -51,6 +52,7 @@ function App() {
   // Fetch current user
   useEffect(() => {
     const fetchUser = async () => {
+      dispatch(startFetchingUser())
       try {
         const res = await axios.get(serverUrl + '/api/user/currentuser', { withCredentials: true })
         dispatch(setUserData(res.data?.user || res.data))

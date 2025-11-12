@@ -4,12 +4,17 @@ const userSlice=createSlice({
     name:"user",
     initialState:{
         userData:null,
+        isFetchingUser: false,
         wishlist: [],
         notifications: []
     },//setUserData("ankush")<={payload}
     reducers:{
+        startFetchingUser: (state) => {
+            state.isFetchingUser = true;
+        },
         setUserData:(state,action)=>{
         state.userData=action.payload
+        state.isFetchingUser = false;
         },
         setWishlist: (state, action) => {
             state.wishlist = action.payload;
@@ -37,5 +42,5 @@ const userSlice=createSlice({
     }
 })
 
-export const {setUserData, setWishlist, addToWishlist, removeFromWishlist, setNotifications, addNotification, markNotificationAsRead}=userSlice.actions
+export const {startFetchingUser, setUserData, setWishlist, addToWishlist, removeFromWishlist, setNotifications, addNotification, markNotificationAsRead}=userSlice.actions
 export default userSlice.reducer

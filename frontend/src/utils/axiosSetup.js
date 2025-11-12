@@ -35,6 +35,10 @@ axios.interceptors.response.use(
 
     isRedirecting = true
 
+    // Clear user data on logout
+    // Assuming you have access to dispatch, but since this is a setup file, we use localStorage or a global store
+    // For now, we'll rely on the component to handle state clearing, but we can add a callback if needed
+
     // Redirect to the login page.
     // The user state should be cleared by the component that calls logout.
     // This interceptor's job is to handle unexpected 401s (e.g., expired token, forced logout).

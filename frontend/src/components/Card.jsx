@@ -6,7 +6,7 @@ import { addToWishlist, removeFromWishlist } from '../redux/userSlice';
 import { serverUrl } from '../App';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-const CourseCard = ({ thumbnail, title, category, price ,id , reviews }) => {
+const CourseCard = ({ thumbnail, title, category, price ,id , reviews, onCardClick, courseData }) => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { userData, wishlist } = useSelector(state => state.user)
@@ -46,8 +46,21 @@ const CourseCard = ({ thumbnail, title, category, price ,id , reviews }) => {
       toast.error(error.response?.data?.message || "Wishlist update failed")
     }
   }
+
+  const handleCardClick = () => {
+    // If user is logged in, navigate to course view
+    if (userData) {
+      navigate(`/viewcourse/${id}`)
+    } else {
+      // If not logged in, open modal
+      if (onCardClick && courseData) {
+        onCardClick(courseData)
+      }
+    }
+  }
+
   return (
-    <div className="max-w-sm w-full bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-300 relative" onClick={()=>navigate(`/viewcourse/${id}`)}>
+    <div className="max-w-[280px] w-full bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-300 relative cursor-pointer" onClick={handleCardClick}>
       {/* Thumbnail */}
       <img
         src={thumbnail}

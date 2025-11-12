@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import ai from "../assets/ai.png";
 import ai1 from "../assets/ai1.png";
+import getCouseData from "../customHooks/getCouseData.jsx";
 
 // Udemy-style sections
 import HeroSection from "../components/HomeSections/HeroSection";
@@ -19,6 +20,8 @@ import SkillsSection from "../components/HomeSections/SkillsSection";
 function Home() {
   const navigate = useNavigate();
   const { userData } = useSelector((state) => state.user);
+  //  Fetch course data on Home load
+  getCouseData();
 
   return (
     <div className="w-[100%] overflow-hidden">

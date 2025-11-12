@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Card from "../components/Card.jsx";
+import CourseDetailModal from "../components/CourseDetailModal.jsx";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
@@ -14,6 +15,8 @@ function AllCourses() {
   const navigate = useNavigate();
   const [category, setCategory] = useState([]);
   const [filterCourses, setFilterCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const dispatch = useDispatch();
   
   const { courseData } = useSelector(state => state.course);
@@ -55,6 +58,16 @@ function AllCourses() {
     applyFilter();
   }, [category]);
 
+  const handleCardClick = (course) => {
+    setSelectedCourse(course);
+    setIsModalOpen(true);
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCourse(null);
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Nav/>
@@ -89,13 +102,30 @@ function AllCourses() {
       </aside>
 
       {/* ✅ DISPLAY COURSES */}
-      <main className="w-full transition-all duration-300 py-[130px] md:pl-[300px] flex items-start justify-center md:justify-start flex-wrap gap-6 px-[10px]">
+      <main className="w-full transition-all duration-300 py-[130px] md:pl-[300px] flex items-start justify-center md:justify-start flex-wrap gap-[20px] px-[10px]">
         {
           filterCourses?.map((item,index)=>(
-            <Card key={index} thumbnail={item.thumbnail} title={item.title} price={item.price} category={item.category} id={item._id} reviews={item.reviews} />
+            <Card 
+              key={index} 
+              thumbnail={item.thumbnail} 
+              title={item.title} 
+              price={item.price} 
+              category={item.category} 
+              id={item._id} 
+              reviews={item.reviews}
+              courseData={item}
+              onCardClick={handleCardClick}
+            />
           ))
         }
       </main>
+
+      {/* Course Detail Modal */}
+      <CourseDetailModal 
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        courseData={selectedCourse}
+      />
     </div>
   );
 }
