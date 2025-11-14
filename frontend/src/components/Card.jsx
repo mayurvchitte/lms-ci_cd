@@ -84,15 +84,20 @@ const CourseCard = ({ thumbnail, title, category, price ,id , reviews, onCardCli
           </span>
         
 
+        {/* Educator */}
+        <div className="mt-3 px-[10px]">
+          <p className="text-sm text-gray-500">By {courseData.educator}</p>
+        </div>
+
         {/* Meta info */}
-        <div className="flex justify-between text-sm text-gray-600 mt-3 px-[10px]">
-          
+        <div className="flex justify-between text-sm text-gray-600 mt-1 px-[10px]">
+
           <span className="font-semibold text-gray-800">₹{price}</span>
-         
+
            <span className="flex items-center gap-1 ">
             <FaStar className="text-yellow-500" /> {avgRating}
           </span>
-          
+
         </div>
       </div>
     </div>

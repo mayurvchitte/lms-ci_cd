@@ -29,10 +29,16 @@ export const createCourse = async (req, res) => {
 export const getPublishedCourses = async (req, res) => {
   try {
     const courses = await Course.find({ isPublished: true }).populate(
-      "lectures reviews"
+      "lectures reviews creator"
     );
 
-    return res.status(200).json(courses);
+    // Add educator name to each course
+    const coursesWithEducator = courses.map(course => ({
+      ...course.toObject(),
+      educator: course.creator ? course.creator.name : "Unknown Educator"
+    }));
+
+    return res.status(200).json(coursesWithEducator);
   } catch (error) {
     return res
       .status(500)
@@ -108,11 +114,17 @@ export const getCourseById = async (req, res) => {
   try {
     const { courseId } = req.params;
 
-    const course = await Course.findById(courseId).populate("lectures reviews");
+    const course = await Course.findById(courseId).populate("lectures reviews creator");
 
     if (!course) return res.status(404).json({ message: "Course not found" });
 
-    return res.status(200).json(course);
+    // Add educator name to the course
+    const courseWithEducator = {
+      ...course.toObject(),
+      educator: course.creator ? course.creator.name : "Unknown Educator"
+    };
+
+    return res.status(200).json(courseWithEducator);
   } catch (error) {
     return res.status(500).json({ message: `Failed to get course ${error}` });
   }

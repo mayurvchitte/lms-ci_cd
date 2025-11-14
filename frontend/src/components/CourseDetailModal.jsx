@@ -73,7 +73,7 @@ const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
           {/* Title and Rating */}
           <div className="space-y-2">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              {courseData.title}
+              {courseData.title} <span className="text-lg text-gray-600"> By {courseData.educator}</span>
             </h2>
             {courseData.subTitle && (
               <p className="text-gray-600 text-lg">
