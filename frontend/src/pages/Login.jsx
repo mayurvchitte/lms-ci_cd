@@ -4,12 +4,13 @@ import google from '../assets/google.jpg';
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { MdOutlineRemoveRedEye, MdRemoveRedEye } from "react-icons/md";
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import GoogleAuthService from '../../utils/GoogleAuth';
 import { toast } from 'react-toastify';
 import { ClipLoader } from 'react-spinners';
 import { useDispatch } from 'react-redux';
 import { setUserData } from '../redux/userSlice';
+import { MdArrowBack } from "react-icons/md";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -36,7 +37,6 @@ function Login() {
       setLoading(false);
       toast.success("Login successful!");
 
-      // ✅ Redirect based on user role
       if (user.role === "admin") {
         navigate("/admin/dashboard", { replace: true });
       } else if (user.role === "educator") {
@@ -71,6 +71,15 @@ function Login() {
         onSubmit={(e) => e.preventDefault()}
       >
         <div className='md:w-[50%] w-[100%] h-[100%] flex flex-col items-center justify-center gap-4'>
+
+          {/* 🔙 Back Button (Added Here) */}
+          <div className="w-[85%] flex items-start px-3">
+              <Link to="/" className="flex items-center gap-1 text-black font-semibold text-[15px]">
+               <MdArrowBack size={18} />
+               Home
+              </Link>
+          </div>
+
           <div>
             <h1 className='font-semibold text-[black] text-2xl'>Welcome back</h1>
             <h2 className='text-[#999797] text-[18px]'>Login to your account</h2>
