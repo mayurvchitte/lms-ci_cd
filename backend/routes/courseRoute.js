@@ -14,7 +14,8 @@ import {
   removeLecture,
   getCourseLecture,
   getCreatorById,
-  checkEnrollment
+  checkEnrollment,
+  enrollCourse
 } from "../controllers/courseController.js";
 
 const courseRouter = express.Router();
@@ -65,4 +66,6 @@ courseRouter.post("/getcreator", isAuth, getCreatorById);
 // ✅ Check if student is enrolled in course
 courseRouter.get("/enrolled/:courseId", isAuth, checkEnrollment);
 
+// ✅ Enroll in a course
+courseRouter.post("/enroll", isAuth, enrollCourse);
 export default courseRouter;

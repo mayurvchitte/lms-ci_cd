@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import logo from "../assets/logo.jpeg"
+import logo from "../assets/apical logo.jpg"
 import ai from "../assets/ai.png"
 import { IoMdPerson, IoMdNotifications } from "react-icons/io";
 import { GiHamburgerMenu } from "react-icons/gi";
@@ -131,11 +131,21 @@ function Nav() {
     <div onClick={closeDropdown}>
       <div className='w-[100%] h-[90px] fixed top-0 px-[20px] py-[10px] flex items-center justify-between bg-[#00000047]  z-[100]'>
         <div className='lg:w-[20%] w-[40%] lg:pl-[50px] flex items-center gap-6'>
-          <img src={logo} className=' w-[80px] h-[80px] rounded-[5px] border-2 border-white cursor-pointer' onClick={() => navigate("/")} alt="SkillSphere Logo" />
+          <img src={logo} className=' w-[80px] h-[80px] rounded-[5px] border-2 border-white cursor-pointer' onClick={() => navigate("/")} alt="Apical Soft Solution Logo" />
           <div className='hidden lg:flex items-center gap-4'>
-            <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => scrollToSection('explore-courses')}>Home</span>
-            <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => scrollToSection('about-us')}>AboutUs</span>
-            <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => scrollToSection('contact-us')}>ContactUs</span>
+          {userData?.role === 'educator' ? (
+              <div className='hidden lg:flex items-center gap-4'>
+                <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => navigate("/admin/users")}>Students</span>
+                <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => scrollToSection('your-courses')}>YourCourses</span>
+                <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => scrollToSection('contact-us')}>ContactUs</span>
+              </div>
+            ) : (
+              <div className='hidden lg:flex items-center gap-4'>
+                <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => scrollToSection('explore-courses')}>Home</span>
+                <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => scrollToSection('about-us')}>AboutUs</span>
+                <span className='text-white cursor-pointer hover:text-gray-300 transition-colors' onClick={() => scrollToSection('contact-us')}>ContactUs</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -154,7 +164,9 @@ function Nav() {
             </>
           ) : (
             <>
+            {userData?.role !== 'educator' && (
               <button className='px-[20px] py-[10px] lg:bg-white bg-black lg:text-black text-white rounded-[10px] text-[18px] font-light flex gap-2 cursor-pointer items-center justify-center' onClick={() => navigate("/searchwithai")}>Search with AI <img src={ai} className='w-[30px] h-[30px] rounded-full hidden lg:block' alt="" /></button>
+            )}
               {userData?.role === "student" && (
                 <>
                   <FaHeart className='w-[30px] h-[30px] fill-red-500 cursor-pointer' onClick={(e) => { e.stopPropagation(); navigate("/wishlist"); }} title="Wishlist" />

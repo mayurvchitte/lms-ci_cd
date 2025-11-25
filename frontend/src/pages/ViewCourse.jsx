@@ -32,7 +32,7 @@ function ViewCourse() {
   // ✅ NEW: Notepad State
   const [notes, setNotes] = useState("");
 
-  // ✅ Load saved notes when lecture changes
+  // Load saved notes when lecture changes
   useEffect(() => {
     if (selectedLecture) {
       const savedNotes = localStorage.getItem(`notes_${courseId}_${selectedLecture._id}`);
@@ -47,16 +47,31 @@ function ViewCourse() {
     }
   };
 
-  const handleReview = async () => {
+  // ⭐ UPDATED ENROLL FUNCTION
+  const handleEnroll = async () => {
     try {
-      const result = await axios.post(serverUrl + "/api/review/givereview" , {rating , comment , courseId} , {withCredentials:true})
-      toast.success("Review Added")
-      setRating(0)
-      setComment("")
+      await axios.post(
+        `${serverUrl}/api/course/enroll`,
+        { courseId },
+        { withCredentials: true }
+      );
+
+      toast.success("Successfully Enrolled!");
+
+      // ✅ Update userData in Redux
+      const updatedUser = {
+        ...userData,
+        enrolledCourses: [...userData.enrolledCourses, courseId],
+      };
+      dispatch({ type: "user/setUserData", payload: updatedUser });
+
+      // ✅ Update local state
+      setIsEnrolled(true);
+
     } catch (error) {
-      toast.error(error.response.data.message)
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
-  }
+  };
 
   const calculateAverageRating = (reviews) => {
     if (!reviews || reviews.length === 0) return 0;
@@ -75,19 +90,18 @@ function ViewCourse() {
     })
   }
 
-  const checkEnrollment = () => {
-    const verify = userData?.enrolledCourses?.some(c => {
+  // ✅ UPDATED: checkEnrollment uses Redux state for persistence
+  useEffect(() => {
+    const enrolled = userData?.enrolledCourses?.some(c => {
       const enrolledId = typeof c === 'string' ? c : c._id;
       return enrolledId?.toString() === courseId?.toString();
     });
-
-    if (verify) setIsEnrolled(true);
-  };
+    setIsEnrolled(enrolled || false);
+  }, [userData, courseId]);
 
   useEffect(() => {
     fetchCourseData()
-    checkEnrollment()
-  }, [courseId,courseData,lectureData])
+  }, [courseId, courseData, lectureData])
 
 
   useEffect(() => {
@@ -149,7 +163,23 @@ function ViewCourse() {
                 <span className="text-lg font-semibold text-black">{selectedCourseData?.price}</span>{" "}
                 <span className="line-through text-sm text-gray-400">₹599</span>
               </div>
+
+              {/* ⭐ ENROLL BUTTON ADDED HERE */}
+              {userData?.role === "student" && (
+                <button
+                  onClick={handleEnroll}
+                  disabled={isEnrolled}
+                  className={`mt-3 px-5 py-2 rounded-lg text-white font-semibold transition ${
+                    isEnrolled
+                      ? "bg-green-500 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+                >
+                  {isEnrolled ? "Enrolled ✓" : "Enroll Now"}
+                </button>
+              )}
             </div>
+
           </div>
         </div>
 
@@ -206,7 +236,7 @@ function ViewCourse() {
                   {selectedLecture?.lectureTitle}
                 </h3>
 
-                {/* ✅ NOTEPAD under video */}
+                {/* NOTEPAD */}
                 <div className="mt-4">
                   <h3 className="font-semibold text-gray-800 mb-2">📝 Write Notes</h3>
                   <textarea
