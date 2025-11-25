@@ -28,14 +28,13 @@ export const createCourse = async (req, res) => {
 // ✅ GET PUBLISHED COURSES  (UPDATED)
 export const getPublishedCourses = async (req, res) => {
   try {
-    const courses = await Course.find({ isPublished: true }).populate(
-      "lectures reviews creator"
-    );
+    const courses = await Course.find({ isPublished: true })
+      .populate("lectures reviews creator"); // ⭐ Added creator
 
-    // Add educator name to each course
+    // ⭐ Add educator name in each course
     const coursesWithEducator = courses.map(course => ({
       ...course.toObject(),
-      educator: course.creator ? course.creator.name : "Unknown Educator"
+      educator: course.creator ? course.creator.name : "Unknown Educator",
     }));
 
     return res.status(200).json(coursesWithEducator);
@@ -114,14 +113,15 @@ export const getCourseById = async (req, res) => {
   try {
     const { courseId } = req.params;
 
-    const course = await Course.findById(courseId).populate("lectures reviews creator");
+    const course = await Course.findById(courseId)
+      .populate("lectures reviews creator"); // ⭐ Added creator
 
     if (!course) return res.status(404).json({ message: "Course not found" });
 
-    // Add educator name to the course
+    // ⭐ Add educator name
     const courseWithEducator = {
       ...course.toObject(),
-      educator: course.creator ? course.creator.name : "Unknown Educator"
+      educator: course.creator ? course.creator.name : "Unknown Educator",
     };
 
     return res.status(200).json(courseWithEducator);
@@ -276,6 +276,7 @@ export const checkEnrollment = async (req, res) => {
       .json({ message: `Failed to check enrollment ${error}` });
   }
 };
+
 export const enrollCourse = async (req, res) => {
   try {
     const { courseId } = req.body;

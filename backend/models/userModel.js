@@ -1,47 +1,89 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-
 const userSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true, minlength: 6 },
+    name: {
+      type: String,
+      required: true
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true
+    },
+    password: {
+      type: String
+      
+    },
+    description: {
+      type: String
+    },
     role: {
       type: String,
-      enum: ["student", "educator", "admin"],
-      default: "student",
+      enum: ["admin", "educator", "student"],
+      required: true
     },
+    photoUrl: {
+      type: String,
+      default: ""
+    },
+    enrolledCourses: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course'
+    }],
+    wishlistCourses: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course'
+    }],
+    resetOtp:{
+      type:String
+    },
+    otpExpires:{
+      type:Date
+    },
+    isOtpVerifed:{
+      type:Boolean,
+      default:false
+    },
+    violations: [{
+      lectureId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lecture'
+      },
+      violationType: {
+        type: String,
+        enum: ['screenshot', 'screen_recording', 'copy', 'print', 'dev_tools']
+      },
+      timestamp: {
+        type: Date,
+        default: Date.now
+      }
+    }]
+    ,
+    // When true the server will treat the user's token as invalid and force logout
+    forceLogout: {
+      type: Boolean,
+      default: false
+    },
+    // Optional time until which forceLogout applies; if set and in the past the flag can be cleared
+    forceLogoutUntil: {
+      type: Date,
+      default: null
+    }
+    ,
+    // Track last login time for activity checks
+    lastLoginAt: {
+      type: Date,
+      default: null
+    },
+    // Allow admin to mark users active/inactive
+    isActive: {
+      type: Boolean,
+      default: true
+    }
 
-    // ✅ For Active/Inactive tracking
-    lastLogin: { type: Date, default: Date.now },
-    status: { type: String, enum: ["active", "inactive"], default: "active" },
   },
   { timestamps: true }
 );
-
-// ✅ Hash password before saving
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
-
-// ✅ Compare password
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-// ✅ Check if user is inactive (60 days = 2 months)
-userSchema.methods.checkInactive = function () {
-  const twoMonthsAgo = new Date();
-  twoMonthsAgo.setDate(twoMonthsAgo.getDate() - 60);
-  if (this.lastLogin < twoMonthsAgo) {
-    this.status = "inactive";
-  } else {
-    this.status = "active";
-  }
-  return this.status;
-};
 
 const User = mongoose.model("User", userSchema);
 export default User;

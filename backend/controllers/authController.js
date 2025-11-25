@@ -1,104 +1,286 @@
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import User from "../models/userModel.js";
+import { genToken } from "../configs/token.js"
+import validator from "validator"
 
-// Helper to create a JWT
-const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-};
+import bcrypt from "bcryptjs"
+import User from "../models/userModel.js"
 
-// ✅ Signup
-export const signUp = async (req, res) => {
-  try {
-    const { name, email, password, role } = req.body;
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "User already exists" });
+import sendMail from "../configs/Mail.js"
 
-    const newUser = await User.create({ name, email, password, role });
-    const token = createToken(newUser._id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/",
-    });
+export const signUp=async (req,res)=>{
+ 
+    try {
 
-    res.status(201).json({
-      message: "Signup successful",
-      user: { _id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+        let {name,email,password,role}= req.body
+        let existUser= await User.findOne({email})
+        if(existUser){
+            return res.status(400).json({message:"email already exist"})
+        }
+        if(!validator.isEmail(email)){
+            return res.status(400).json({message:"Please enter valid Email"})
+        }
+        if(password.length < 8){
+            return res.status(400).json({message:"Please enter a Strong Password"})
+        }
+        
+        let hashPassword = await bcrypt.hash(password,10)
+        let user = await User.create({
+            name ,
+            email ,
+            password:hashPassword ,
+            role,
+           
+            })
+        let token = await genToken(user._id)
+        res.cookie("token",token,{
+            httpOnly:true,
+            secure:false,
+            sameSite: "Lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        })
+        return res.status(201).json(user)
 
-// ✅ Login
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found" });
+    } catch (error) {
+        console.log("signUp error")
+        return res.status(500).json({message:`signUp Error ${error}`})
+    }
+}
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+export const login=async(req,res)=>{
+    try {
+        let {email,password}= req.body
+        let user= await User.findOne({email})
+        if(!user){
+            return res.status(400).json({message:"user does not exist"})
+        }
+        let isMatch =await bcrypt.compare(password, user.password)
+        if(!isMatch){
+            return res.status(400).json({message:"incorrect Password"})
+        }
+        let token =await genToken(user._id)
+                // Update lastLoginAt on successful login
+                try {
+                    user.lastLoginAt = Date.now()
+                    // If user was previously deactivated, do not automatically reactivate unless desired.
+                    // We'll keep isActive as-is here, but ensure it exists for older docs.
+                    if (typeof user.isActive === 'undefined') user.isActive = true
+                    await user.save()
+                } catch (e) {
+                    console.warn('Failed to update lastLoginAt:', e)
+                }
 
-    // Update lastLogin and check status
-    user.lastLogin = new Date();
-    user.checkInactive();
-    await user.save();
+                res.cookie("token",token,{
+            httpOnly:true,
+            secure:false,
+            sameSite: "Lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        })
+        return res.status(200).json(user)
 
-    const token = createToken(user._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/",
-    });
+    } catch (error) {
+        console.log("login error")
+        return res.status(500).json({message:`login Error ${error}`})
+    }
+}
 
-    res.status(200).json({
-      message: "Login successful",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
-// ✅ Logout
-export const logOut = (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-  res.json({ message: "Logout successful" });
-};
 
-// ✅ Reset Password
-export const resetPassword = async (req, res) => {
-  try {
-    const { email, newPassword } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.password = newPassword;
-    await user.save();
+export const logOut = async(req,res)=>{
+    try {
+        // Clear cookie with same options as set cookie
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: false,
+            sameSite: "Lax",
+        })
+        return res.status(200).json({message:"logOut Successfully"})
+    } catch (error) {
+        return res.status(500).json({message:`logout Error ${error}`})
+    }
+}
 
-    res.json({ message: "Password reset successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
-// OTP flow placeholder (optional)
-export const sendOtp = (req, res) => res.json({ message: "OTP sent (mock)" });
-export const verifyOtp = (req, res) => res.json({ message: "OTP verified (mock)" });
+export const googleSignup = async (req,res) => {
+    try {
+        const {name , email , role} = req.body
+        let user= await User.findOne({email})
+        if(!user){
+            user = await User.create({
+            name , email ,role
+        })
+        }
+                // Update lastLoginAt and ensure isActive exists
+                try {
+                    user.lastLoginAt = Date.now()
+                    if (typeof user.isActive === 'undefined') user.isActive = true
+                    await user.save()
+                } catch (e) {
+                    console.warn('Failed to update lastLoginAt for googleSignup:', e)
+                }
+
+                let token =await genToken(user._id)
+        res.cookie("token",token,{
+            httpOnly:true,
+            secure:false,
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        })
+        return res.status(200).json(user)
+
+
+    } catch (error) {
+        console.log(error)
+         return res.status(500).json({message:`googleSignup  ${error}`})
+    }
+    
+}
+
+export const sendOtp = async (req,res) => {
+    try {
+        const {email} = req.body
+        const user = await User.findOne({email})
+        if(!user){
+            return res.status(404).json({message:"User not found"})
+        }
+        const otp = Math.floor(1000 + Math.random() * 9000).toString()
+
+        user.resetOtp=otp,
+        user.otpExpires=Date.now() + 5*60*1000,
+        user.isOtpVerifed= false 
+
+        await user.save()
+        await sendMail(email,otp)
+        return res.status(200).json({message:"Email Successfully send"})
+    } catch (error) {
+
+        return res.status(500).json({message:`send otp error ${error}`})
+        
+    }
+}
+
+export const verifyOtp = async (req,res) => {
+    try {
+        const {email,otp} = req.body
+        const user = await User.findOne({email})
+        if(!user || user.resetOtp!=otp || user.otpExpires<Date.now() ){
+            return res.status(400).json({message:"Invalid OTP"})
+        }
+        user.isOtpVerifed=true
+        user.resetOtp=undefined
+        user.otpExpires=undefined
+        await user.save()
+        return res.status(200).json({message:"OTP varified "})
+
+
+    } catch (error) {
+         return res.status(500).json({message:`Varify otp error ${error}`})
+    }
+}
+
+export const resetPassword = async (req,res) => {
+    try {
+        const {email ,password } =  req.body
+         const user = await User.findOne({email})
+        if(!user || !user.isOtpVerifed ){
+            return res.status(404).json({message:"OTP verfication required"})
+        }
+
+        const hashPassword = await bcrypt.hash(password,10)
+        user.password = hashPassword
+        user.isOtpVerifed=false
+        await user.save()
+        return res.status(200).json({message:"Password Reset Successfully"})
+    } catch (error) {
+        return res.status(500).json({message:`Reset Password error ${error}`})
+    }
+}
+
+export const googleTokenExchange = async (req,res) => {
+    try {
+        const { code, redirect_uri } = req.body;
+        console.log('Backend: Received Google code for exchange:', code ? 'present' : 'missing');
+
+        // Exchange code for tokens with Google
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: process.env.GOOGLE_CLIENT_ID,
+                client_secret: process.env.GOOGLE_CLIENT_SECRET,
+                code: code,
+                grant_type: 'authorization_code',
+                redirect_uri: redirect_uri,
+            }),
+        });
+
+        if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            console.error('Backend: Google token exchange failed:', tokenResponse.status, errorText);
+            throw new Error('Failed to exchange code for token');
+        }
+
+        const tokens = await tokenResponse.json();
+        console.log('Backend: Google tokens received successfully');
+
+        // Get user info using the access token
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: {
+                'Authorization': `Bearer ${tokens.access_token}`
+            }
+        });
+
+        if (!userInfoResponse.ok) {
+            console.error('Backend: Failed to fetch user info:', userInfoResponse.status);
+            throw new Error('Failed to get user info');
+        }
+
+        const userInfo = await userInfoResponse.json();
+        console.log('Backend: User info fetched:', { name: userInfo.name, email: userInfo.email });
+
+        // Check if user exists, if not create one
+        let user = await User.findOne({ email: userInfo.email });
+        if (!user) {
+            user = await User.create({
+                name: userInfo.name,
+                email: userInfo.email,
+                role: "student", // default role
+            });
+            console.log('Backend: New user created with email:', userInfo.email);
+        } else {
+            console.log('Backend: Existing user found with email:', userInfo.email);
+        }
+
+        // Generate JWT token
+        const token = await genToken(user._id);
+
+                // Update lastLoginAt and ensure isActive exists
+                try {
+                    user.lastLoginAt = Date.now()
+                    if (typeof user.isActive === 'undefined') user.isActive = true
+                    await user.save()
+                } catch (e) {
+                    console.warn('Failed to update lastLoginAt for googleTokenExchange:', e)
+                }
+
+                // Set cookie
+                res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        console.log('Backend: JWT set and response sent for user:', user._id);
+        return res.status(200).json({
+            user: user,
+            access_token: tokens.access_token
+        });
+
+    } catch (error) {
+        console.error('Backend: Google token exchange error:', error);
+        return res.status(500).json({ message: `Google authentication failed: ${error.message}` });
+    }
+}

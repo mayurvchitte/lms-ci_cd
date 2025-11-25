@@ -41,6 +41,7 @@ function Home() {
 
 
   const [creatorCourseData, setCreatorCourseData] = useState([]);
+  const [allPublishedCourses, setAllPublishedCourses] = useState([]);
   const scrollRef = useRef(null);
   const location = useLocation();
 
@@ -76,6 +77,24 @@ function Home() {
     return () => {
       mounted = false;
     };
+  }, [userData]);
+
+  // Fetch all published courses for admin view
+  useEffect(() => {
+    let mounted = true;
+    const fetchAll = async () => {
+      if (!userData || userData.role !== 'admin') return;
+      try {
+        const res = await safeAxios.get('/api/course/getpublishedcourses');
+        if (!mounted) return;
+        setAllPublishedCourses(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error('Failed to fetch published courses for admin:', err);
+        setAllPublishedCourses([]);
+      }
+    };
+    fetchAll();
+    return () => { mounted = false };
   }, [userData]);
 
   // Auto-scroll for educator courses section (unchanged behavior)
@@ -118,6 +137,49 @@ function Home() {
       }
     }
   }, [location]);
+
+  // Admin: show only navbar, ongoing courses list (published), and footer
+  if (userData?.role === 'admin') {
+    return (
+      <div className="w-[100%] overflow-hidden">
+        <Nav />
+        <div className="max-w-6xl mx-auto px-4 py-10">
+          <h2 className="text-2xl font-bold mb-4">Ongoing Courses</h2>
+          {allPublishedCourses && allPublishedCourses.length > 0 ? (
+            <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allPublishedCourses.map(course => (
+                <li key={course._id} className="border rounded p-4 bg-white shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <img src={course.thumbnail || 'https://via.placeholder.com/120x70'} alt={course.title} className="w-28 h-16 object-cover rounded" />
+                    <div>
+                      <div className="font-semibold text-lg text-blue-600">{course.title}</div>
+                      <div className="text-sm text-gray-600">
+                        By: {
+                          course.creatorName
+                            || (course.creator && typeof course.creator === 'object' ? course.creator.name || course.creator.email : course.creator)
+                            || 'Unknown'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">No ongoing courses found.</p>
+          )}
+        </div>
+        <div id="contact-us">
+          <Footer />
+        </div>
+        <CourseDetailModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          courseData={selectedCourse}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="w-[100%] overflow-hidden">
