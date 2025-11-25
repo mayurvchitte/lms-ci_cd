@@ -25,7 +25,7 @@ export const createCourse = async (req, res) => {
   }
 };
 
-// ✅ GET PUBLISHED COURSES
+// ✅ GET PUBLISHED COURSES  (UPDATED)
 export const getPublishedCourses = async (req, res) => {
   try {
     const courses = await Course.find({ isPublished: true }).populate(
@@ -109,7 +109,7 @@ export const editCourse = async (req, res) => {
   }
 };
 
-// ✅ GET COURSE BY ID
+// ✅ GET COURSE BY ID (UPDATED)
 export const getCourseById = async (req, res) => {
   try {
     const { courseId } = req.params;
