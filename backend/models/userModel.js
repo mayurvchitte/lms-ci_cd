@@ -40,10 +40,15 @@ const userSchema = new mongoose.Schema(
     otpExpires:{
       type:Date
     },
-    isOtpVerifed:{
+    isOtpVerified:{
       type:Boolean,
       default:false
     },
+    otpType: {
+     type: String,
+     enum: ["signup", "forgot"],
+     default: null
+     },
     violations: [{
       lectureId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -68,6 +73,17 @@ const userSchema = new mongoose.Schema(
     forceLogoutUntil: {
       type: Date,
       default: null
+    }
+    ,
+    // Track last login time for activity checks
+    lastLoginAt: {
+      type: Date,
+      default: null
+    },
+    // Allow admin to mark users active/inactive
+    isActive: {
+      type: Boolean,
+      default: true
     }
 
   },
