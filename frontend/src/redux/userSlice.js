@@ -9,6 +9,9 @@ const userSlice = createSlice({
     notifications: []
   },
   reducers: {
+    startFetchingUser: (state) => {
+      state.isFetchingUser = true;
+    },
     setUserData: (state, action) => {
       state.userData = action.payload;
       state.isFetchingUser = false;
@@ -38,6 +41,7 @@ const userSlice = createSlice({
 });
 
 export const {
+  startFetchingUser,
   setUserData,
   setWishlist,
   addToWishlist,
