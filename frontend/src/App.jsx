@@ -38,9 +38,9 @@ import './customHooks/useScreenshotPrevention'
 import './utils/axiosSetup'
 import useScreenshotPrevention from './customHooks/useScreenshotPrevention'
 
-// export const serverUrl = "http://localhost:8000"
+export const serverUrl = "http://localhost:8000"
 // export const serverUrl = "http://72.60.219.208:8000"
- export const serverUrl = "https://techsproutlms.com";
+//  export const serverUrl = "https://techsproutlms.com";
 
 function App() {
   const dispatch = useDispatch()
