@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useDispatch } from "react-redux";
-import { setUserData } from "../redux/userSlice";
+import { useDispatch } from 'react-redux';
+import { setUserData } from '../redux/userSlice';
 import { ClipLoader } from 'react-spinners';
 
 function SignupOtp() {
@@ -17,8 +17,17 @@ function SignupOtp() {
   // Values passed from SignUp.jsx  
   const { name, email, password, role } = location.state || {};
 
+  // Redirect if no signup info
+  useEffect(() => {
+    if (!email || !name || !password || !role) {
+      navigate("/signup");
+    }
+  }, [email, name, password, role, navigate]);
+
   const handleVerify = async () => {
-    if (!otp) return toast.error("Please enter OTP");
+    if (!otp.trim()) {
+      return toast.error("Please enter OTP");
+    }
 
     setLoading(true);
     try {
@@ -29,26 +38,26 @@ function SignupOtp() {
         { withCredentials: true }
       );
 
-      // Step 2: Complete signup + login
+      // Step 2: Complete signup
       const res = await axios.post(
         `${serverUrl}/api/auth/signup`,
-        { email, password },
+        { name, email, password, role }, // include all required info
         { withCredentials: true }
       );
 
-      // Step 3: Save user in Redux
-      dispatch(setUserData(res.data));
+      // Step 3: Save user data in Redux
+      dispatch(setUserData(res.data.user));
 
       toast.success("Signup successful!");
 
-      // Step 4: Redirect to home
-      // Use window.location to force re-read of cookies and prevent blank page
-      setTimeout(() => {
-        window.location.replace("/");
-      }, 100);
+      // Step 4: Redirect based on role
+      if (res.data.user.role === "student") navigate("/");
+      else if (res.data.user.role === "educator") navigate("/dashboard");
+      else if (res.data.user.role === "admin") navigate("/admin/dashboard");
 
     } catch (err) {
-      toast.error(err.response?.data?.message || "OTP error");
+      console.error(err);
+      toast.error(err.response?.data?.message || "OTP verification failed");
     } finally {
       setLoading(false);
     }
@@ -65,18 +74,18 @@ function SignupOtp() {
           We have sent a 6-digit OTP to your email <b>{email}</b>
         </p>
 
-        <input 
+        <input
           type="text"
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
           placeholder="Enter OTP"
-          className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[black] mb-4"
+          className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-black mb-4"
         />
 
         <button
           onClick={handleVerify}
           disabled={loading}
-          className="w-full bg-[black] hover:bg-[#4b4b4b] text-white py-2 px-4 rounded-md font-medium"
+          className="w-full bg-black hover:bg-gray-800 text-white py-2 px-4 rounded-md font-medium flex items-center justify-center"
         >
           {loading ? <ClipLoader size={20} color="white" /> : "Verify OTP"}
         </button>
