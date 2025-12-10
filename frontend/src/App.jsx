@@ -30,6 +30,7 @@ import Notifications from './pages/Notifications'
 import ForgotPassword from './pages/ForgotPassword'
 import AuthCallback from './pages/AuthCallback'
 import ProtectedRoute from './components/ProtectedRoute'
+import SignupOtp from './pages/SignupOtp'
 
 import ScrollToTop from './components/ScrollToTop'
 import { setUserData } from './redux/userSlice'
@@ -87,6 +88,9 @@ function App() {
         <Route path='/forgotpassword' element={<ForgotPassword />} />
         <Route path='/auth/callback' element={<AuthCallback />} />
 
+        {/* Signup OTP Routes */}
+        <Route path="/signup-otp" element={<SignupOtp />} />
+        
         {/* Protected student routes */}
         <Route path='/profile' element={
           <ProtectedRoute allowedRoles={['student', 'educator', 'admin']}><Profile /></ProtectedRoute>
