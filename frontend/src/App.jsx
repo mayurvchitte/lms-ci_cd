@@ -30,6 +30,7 @@ import Notifications from './pages/Notifications'
 import ForgotPassword from './pages/ForgotPassword'
 import AuthCallback from './pages/AuthCallback'
 import ProtectedRoute from './components/ProtectedRoute'
+import SignupOtp from './pages/SignupOtp'
 
 import ScrollToTop from './components/ScrollToTop'
 import { setUserData, startFetchingUser } from './redux/userSlice'
@@ -37,9 +38,9 @@ import './customHooks/useScreenshotPrevention'
 import './utils/axiosSetup'
 import useScreenshotPrevention from './customHooks/useScreenshotPrevention'
 
-// export const serverUrl = "http://localhost:8000"
+export const serverUrl = "http://localhost:8000"
 // export const serverUrl = "http://72.60.219.208:8000"
- export const serverUrl = "https://techsproutlms.com";
+//  export const serverUrl = "https://techsproutlms.com";
 
 function App() {
   const dispatch = useDispatch()
@@ -88,6 +89,9 @@ function App() {
         <Route path='/forgotpassword' element={<ForgotPassword />} />
         <Route path='/auth/callback' element={<AuthCallback />} />
 
+        {/* Signup OTP Routes */}
+        <Route path="/signup-otp" element={<SignupOtp />} />
+        
         {/* Protected student routes */}
         <Route path='/profile' element={
           <ProtectedRoute allowedRoles={['student', 'educator', 'admin']}><Profile /></ProtectedRoute>

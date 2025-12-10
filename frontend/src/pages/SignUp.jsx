@@ -22,24 +22,26 @@ function SignUp() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
 
-  const handleSignUp = async () => {
-    setLoading(true)
-    try {
-      const result = await axios.post(
-        `${serverUrl}/api/auth/signup`,
-        { name, email, password, role },
-        { withCredentials: true }
-      )
-      dispatch(setUserData(result.data))
-      toast.success("SignUp Successfully")
-      navigate("/")
-      setLoading(false)
-    } catch (error) {
-      console.log(error)
-      setLoading(false)
-      toast.error(error.response?.data?.message || "Signup failed")
-    }
+ const handleSignUp = async () => {
+  if (!name.trim() || !email.trim() || !password.trim() || !role) {
+    return toast.error("Please fill all fields and select a role");
   }
+
+  setLoading(true);
+  try {
+    // Send ONLY email to the send-otp endpoint
+    await axios.post(`${serverUrl}/api/auth/signup/send-otp`, { name, email, role });
+
+    // Pass the other info to OTP page via state
+    navigate("/signup-otp", { state: { name, email, password, role } });
+  } catch (error) {
+    console.log(error.response);
+    toast.error(error.response?.data?.message || "Failed to send OTP");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const googleSignUp = async () => {
     setLoading(true)

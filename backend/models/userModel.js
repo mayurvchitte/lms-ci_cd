@@ -40,10 +40,15 @@ const userSchema = new mongoose.Schema(
     otpExpires:{
       type:Date
     },
-    isOtpVerifed:{
+    isOtpVerified:{
       type:Boolean,
       default:false
     },
+    otpType: {
+     type: String,
+     enum: ["signup", "forgot"],
+     default: null
+     },
     violations: [{
       lectureId: {
         type: mongoose.Schema.Types.ObjectId,
