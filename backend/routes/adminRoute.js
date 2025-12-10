@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllUsers, updateUserRole, deleteUser, getSystemStats } from "../controllers/adminController.js";
+import { getAllUsers, updateUserRole, deleteUser, getSystemStats, updateUserStatus } from "../controllers/adminController.js";
 import isAuth from "../middlewares/isAuth.js";
 import User from "../models/userModel.js";
 
@@ -28,6 +28,7 @@ router.use(isAdmin);
 // Admin routes
 router.get('/users', getAllUsers);
 router.put('/users/role', updateUserRole);
+router.put('/users/status', updateUserStatus);
 router.delete('/users/:userId', deleteUser);
 router.get('/stats', getSystemStats);
 

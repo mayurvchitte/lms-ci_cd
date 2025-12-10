@@ -1,4 +1,4 @@
-- [x] Update Card.jsx to display educator name above the price in course cards
-- [x] Update CourseDetailModal.jsx to properly format the course title with educator name in smaller text and add space
-- [x] Update backend to populate and include educator name in API responses
-- [ ] Verify the changes visually to ensure proper display
+- [ ] Modify Card.jsx to always open modal on card click
+- [ ] Update CourseDetailModal.jsx to check login and enrollment status
+- [ ] Implement Razorpay payment flow in CourseDetailModal.jsx
+- [ ] Test enrollment and payment

@@ -1,116 +1,123 @@
-import { uploadFileToS3, deleteFileFromS3 } from "../configs/awsS3.js";
-import { v4 as uuidv4 } from 'uuid';
 import User from "../models/userModel.js";
 
-export const getCurrentUser = async (req,res) => {
-    try {
-        const user = await User.findById(req.userId).select("-password").populate("enrolledCourses")
-         if(!user){
-            return res.status(400).json({message:"user does not found"})
-        }
-        return res.status(200).json(user)
-    } catch (error) {
-        console.log(error);
-        return res.status(400).json({message:"get current user error"})
-    }
-}
+// ✅ Fetch all users with active/inactive status (admin)
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 }).populate('enrolledCourses');
 
-export const UpdateProfile = async (req,res) => {
-    try {
-        const userId = req.userId
-        const {name , description} = req.body
-        let photoUrl
-        if(req.file){
-            const user = await User.findById(userId);
-            if (user && user.photoUrl) {
-                const oldKey = user.photoUrl.split('/').pop();
-                await deleteFileFromS3(oldKey);
-            }
-            const key = `profile-photos/${uuidv4()}-${req.file.originalname}`;
-            photoUrl = await uploadFileToS3(req.file.path, key);
-        }
-        const user = await User.findByIdAndUpdate(userId,{name,description,photoUrl})
+    // Update status based on inactivity & enrolled courses
+    const updatedUsers = await Promise.all(
+      users.map(async (user) => {
+        user.checkInactive(); // checks lastLogin & enrolledCourses
+        await user.save();
+        return user;
+      })
+    );
 
+    res.json(updatedUsers);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-        if(!user){
-            return res.status(404).json({message:"User not found"})
-        }
-        await user.save()
-        return res.status(200).json(user)
-    } catch (error) {
-         console.log(error);
-       return res.status(500).json({message:`Update Profile Error  ${error}`})
-    }
-}
+// ✅ Toggle user status manually (admin)
+export const toggleUserStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
+    user.status = user.status === "active" ? "inactive" : "active";
+    await user.save();
+
+    res.json({ message: `User marked as ${user.status}`, user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ✅ Update user profile
+export const UpdateProfile = async (req, res) => {
+  try {
+    const { userId } = req.user; // set by isAuth middleware
+    const { name, email, password } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (password) user.password = password; // hash if needed
+    if (req.file) user.photoUrl = req.file.filename;
+
+    await user.save();
+
+    res.json({ message: "Profile updated successfully", user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ✅ Get current logged-in user
+export const getCurrentUser = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const user = await User.findById(userId).populate('enrolledCourses wishlist');
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ✅ Wishlist: add course
 export const addToWishlist = async (req, res) => {
-    try {
-        const userId = req.userId;
-        const { courseId } = req.body;
+  try {
+    const { userId } = req.user;
+    const { courseId } = req.body;
 
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-        if (user.role !== "student") {
-            return res.status(403).json({ message: "Only students can add to wishlist" });
-        }
-
-        if (user.wishlistCourses.includes(courseId)) {
-            return res.status(400).json({ message: "Course already in wishlist" });
-        }
-
-        user.wishlistCourses.push(courseId);
-        await user.save();
-
-        return res.status(200).json({ message: "Course added to wishlist", wishlist: user.wishlistCourses });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: `Add to wishlist error: ${error}` });
+    if (!user.wishlist.includes(courseId)) {
+      user.wishlist.push(courseId);
+      await user.save();
     }
+
+    res.json({ message: "Course added to wishlist", wishlist: user.wishlist });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
+// ✅ Wishlist: remove course
 export const removeFromWishlist = async (req, res) => {
-    try {
-        const userId = req.userId;
-        const { courseId } = req.body;
+  try {
+    const { userId } = req.user;
+    const { courseId } = req.body;
 
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-        if (user.role !== "student") {
-            return res.status(403).json({ message: "Only students can manage wishlist" });
-        }
+    user.wishlist = user.wishlist.filter((id) => id.toString() !== courseId);
+    await user.save();
 
-        user.wishlistCourses = user.wishlistCourses.filter(id => id.toString() !== courseId);
-        await user.save();
-
-        return res.status(200).json({ message: "Course removed from wishlist", wishlist: user.wishlistCourses });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: `Remove from wishlist error: ${error}` });
-    }
+    res.json({ message: "Course removed from wishlist", wishlist: user.wishlist });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
+// ✅ Get user's wishlist
 export const getWishlist = async (req, res) => {
-    try {
-        const userId = req.userId;
+  try {
+    const { userId } = req.user;
+    const user = await User.findById(userId).populate('wishlist');
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-        const user = await User.findById(userId).populate('wishlistCourses');
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        if (user.role !== "student") {
-            return res.status(403).json({ message: "Only students can view wishlist" });
-        }
-
-        return res.status(200).json({ wishlist: user.wishlistCourses });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: `Get wishlist error: ${error}` });
-    }
+    res.json(user.wishlist);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

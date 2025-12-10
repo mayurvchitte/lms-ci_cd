@@ -3,7 +3,8 @@ import User from "../models/userModel.js";
 // Get all users
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}, '-password'); // Exclude password field
+    // Populate enrolledCourses to include course titles for admin UI
+    const users = await User.find({}, '-password').populate({ path: 'enrolledCourses', select: 'title' }); // Exclude password field
     return res.status(200).json(users);
   } catch (error) {
     console.log("getAllUsers error:", error);
@@ -74,5 +75,30 @@ export const getSystemStats = async (req, res) => {
   } catch (error) {
     console.log("getSystemStats error:", error);
     return res.status(500).json({ message: `Get system stats error: ${error.message}` });
+  }
+};
+
+// Update user active status (admin only)
+export const updateUserStatus = async (req, res) => {
+  try {
+    const { userId, isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ message: 'isActive must be boolean' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isActive },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({ message: 'User status updated', user });
+  } catch (error) {
+    console.log('updateUserStatus error:', error);
+    return res.status(500).json({ message: `Update user status error: ${error.message}` });
   }
 };

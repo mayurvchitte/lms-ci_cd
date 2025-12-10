@@ -1,40 +1,29 @@
 import express from "express";
-import isAuth from "../middlewares/isAuth.js";
-import upload from "../middlewares/multer.js";
+import jwt from "jsonwebtoken";
+import User from "../models/userModel.js";
 
-import {
-  getCurrentUser,
-  UpdateProfile,
-  addToWishlist,
-  removeFromWishlist,
-  getWishlist
-} from "../controllers/userController.js";
+const router = express.Router();
 
-import {
-  getNotifications,
-  markAsRead
-} from "../controllers/notificationController.js";
+// ✅ Get current user (with cookie)
+router.get("/currentuser", async (req, res) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ message: "Not logged in" });
 
-const userRouter = express.Router();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select("-password");
 
-// ✅ Get logged-in user data
-userRouter.get("/currentuser", isAuth, getCurrentUser);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-// ✅ Update profile + image upload
-userRouter.post(
-  "/updateprofile",
-  isAuth,
-  upload.single("photoUrl"),
-  UpdateProfile
-);
+    // Update active/inactive status automatically
+    user.checkInactive();
+    await user.save();
 
-// ✅ Wishlist
-userRouter.post("/addtowishlist", isAuth, addToWishlist);
-userRouter.post("/removefromwishlist", isAuth, removeFromWishlist);
-userRouter.get("/wishlist", isAuth, getWishlist);
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(401).json({ message: "Invalid token" });
+  }
+});
 
-// ✅ Notifications
-userRouter.get("/notifications", isAuth, getNotifications);
-userRouter.post("/notifications/:id/read", isAuth, markAsRead);
-
-export default userRouter;
+export default router;
