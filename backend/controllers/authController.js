@@ -371,33 +371,54 @@ export const sendSignupOtp = async (req, res) => {
       return res.status(400).json({ message: "Name, email, and role are required" });
     }
 
-    // Check if user already exists in DB
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Store OTP in memory
     global.signupOtps = global.signupOtps || {};
+    const existingSession = global.signupOtps[email];
+
+    // 🔒 RESEND LIMIT
+    if (existingSession) {
+      if (existingSession.resendCount >= 2) {
+        return res.status(429).json({ message: "OTP resend limit reached. Please try again later." });
+      }
+
+      // Increment resend count and generate new OTP
+      existingSession.resendCount += 1;
+      existingSession.otp = Math.floor(100000 + Math.random() * 900000).toString();
+      existingSession.expires = Date.now() + 5 * 60 * 1000; // 5 minutes
+      existingSession.verified = false;
+
+      await sendMail(
+        email,
+        "Signup OTP",
+        `<p>Your OTP is <b>${existingSession.otp}</b>. It expires in 5 minutes.</p>`
+      );
+
+      return res.status(200).json({ message: "OTP resent successfully" });
+    }
+
+    // 🆕 First OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     global.signupOtps[email] = {
       name,
       role,
       otp,
-      expires: Date.now() + 5 * 60 * 1000, // 5 min
-      verified: false
+      expires: Date.now() + 5 * 60 * 1000,
+      verified: false,
+      resendCount: 0
     };
 
-    // Send OTP email
     await sendMail(
       email,
       "Signup OTP",
-      `<p>Your OTP for signup is <b>${otp}</b>. It expires in 5 minutes.</p>`
+      `<p>Your OTP is <b>${otp}</b>. It expires in 5 minutes.</p>`
     );
 
-    return res.status(200).json({ message: "OTP sent for signup" });
+    return res.status(200).json({ message: "OTP sent successfully" });
 
   } catch (error) {
     console.error("sendSignupOtp error:", error);
@@ -434,3 +455,14 @@ export const verifySignupOtp = async (req, res) => {
     return res.status(500).json({ message: "Verify signup OTP error " + error });
   }
 };
+
+// 🧹 Auto-clean expired OTPs (add this in server.js)
+setInterval(() => {
+  if (!global.signupOtps) return;
+  const now = Date.now();
+  for (const email in global.signupOtps) {
+    if (global.signupOtps[email].expires < now) {
+      delete global.signupOtps[email];
+    }
+  }
+}, 60 * 1000); // every minute

@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { serverUrl } from '../../App'
+import { useNavigate } from 'react-router-dom'
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([])
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // 🔹 ADDED: view state (students by default)
+  const [activeView, setActiveView] = useState('students')
+
+  // 🔹 ADDED: navigate for back button
+  const navigate = useNavigate()
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       const safe = axios.create({ baseURL: serverUrl, withCredentials: true })
       try {
-        // Fetch all users (admin-only endpoint) using a safe instance without global interceptors
         const usersRes = await safe.get('/api/admin/users')
-        // Fetch published courses to map ids -> titles
         const coursesRes = await safe.get('/api/course/getpublishedcourses')
 
         setUsers(usersRes.data || [])
         setCourses(coursesRes.data || [])
       } catch (err) {
-        // Handle 401 locally to avoid global redirect
         if (err.response?.status === 401) {
           console.warn('Not authorized to access admin data (401)')
         } else {
@@ -34,15 +38,12 @@ const AdminDashboard = () => {
     fetchData()
   }, [])
 
-  // Build a simple map from course id -> title (avoid useMemo runtime issues)
   const courseMap = new Map()
   if (Array.isArray(courses)) {
     courses.forEach(c => {
       try {
         courseMap.set(String(c._id), c.title)
-      } catch (e) {
-        // ignore malformed course entries
-      }
+      } catch {}
     })
   }
 
@@ -53,15 +54,15 @@ const AdminDashboard = () => {
   }
 
   const isInactive = (user) => {
-    // If user has explicit isActive flag set to false, treat inactive
     if (typeof user.isActive === 'boolean' && user.isActive === false) return true
-    // Otherwise determine by lastLoginAt or updatedAt/createdAt
     const last = user.lastLoginAt || user.updatedAt || user.createdAt
     return daysSince(last) > 60
   }
 
   const toggleActive = async (userId, current) => {
-    const confirmMsg = current ? 'Are you sure you want to set this user inactive?' : 'Are you sure you want to set this user active?'
+    const confirmMsg = current
+      ? 'Are you sure you want to set this user inactive?'
+      : 'Are you sure you want to set this user active?'
     if (!window.confirm(confirmMsg)) return
     try {
       const safe = axios.create({ baseURL: serverUrl, withCredentials: true })
@@ -79,13 +80,10 @@ const AdminDashboard = () => {
   }
 
   if (loading) return <div className="p-6">Loading admin data...</div>
-  // Defensive: if users is not an array, show debug info instead of crashing
   if (!Array.isArray(users)) {
     return (
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-2">Admin data shape (unexpected)</h2>
-        <pre className="whitespace-pre-wrap max-h-96 overflow-auto bg-white p-4 border rounded">{JSON.stringify(users, null, 2)}</pre>
-        <p className="mt-4 text-red-600">`users` is not an array — check server response.</p>
+        <pre>{JSON.stringify(users, null, 2)}</pre>
       </div>
     )
   }
@@ -95,114 +93,164 @@ const AdminDashboard = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
 
-      <section className="mb-8 bg-white p-4 rounded shadow">
-        <h2 className="text-xl font-semibold mb-3">Students</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2 text-left">Name</th>
-                <th className="border p-2 text-left">Email</th>
-                <th className="border p-2 text-left">Enrolled Courses</th>
-                <th className="border p-2 text-left">Last Login</th>
-                <th className="border p-2 text-left">Status</th>
-                <th className="border p-2 text-left">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map(user => {
-                const last = user.lastLoginAt || user.updatedAt || user.createdAt
-                const statusInactive = isInactive(user)
-                return (
-                  <tr key={user._id} className="odd:bg-white even:bg-gray-50">
-                    <td className="border p-2">{user.name}</td>
-                    <td className="border p-2">{user.email}</td>
-                    <td className="border p-2">
-                      {user.enrolledCourses && user.enrolledCourses.length > 0 ? (
-                        <ul className="list-disc pl-5">
-                          {user.enrolledCourses.map((cid) => {
-                            // cid can be an ObjectId string or a populated course object
-                            const courseObj = cid && typeof cid === 'object' ? cid : null
-                            const courseId = courseObj?._id || String(cid)
-                            const title = courseObj?.title || courseMap.get(String(courseId)) || 'Unknown Course'
-                            return (
-                              <li key={String(courseId)}>{title}</li>
-                            )
-                          })}
-                        </ul>
-                      ) : (
-                        <span className="text-gray-500">—</span>
-                      )}
-                    </td>
-                    <td className="border p-2">{last ? new Date(last).toLocaleDateString() : '—'}</td>
-                    <td className="border p-2">
-                      <span className={statusInactive ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
-                        {statusInactive ? 'inactive' : 'active'}
-                      </span>
-                    </td>
-                    <td className="border p-2">
-                      <button
-                        className={"px-3 py-1 rounded " + (statusInactive ? 'bg-green-500 text-white' : 'bg-red-500 text-white')}
-                        onClick={() => toggleActive(user._id, !statusInactive)}
-                      >
-                        {statusInactive ? 'Set Active' : 'Set Inactive'}
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      {/* 🔹 Back Button + Title */}
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+        >
+          ← Back
+        </button>
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+      </div>
 
-      <section className="bg-white p-4 rounded shadow">
-        <h2 className="text-xl font-semibold mb-3">Educators</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2 text-left">Name</th>
-                <th className="border p-2 text-left">Email</th>
-                <th className="border p-2 text-left">Last Login</th>
-                <th className="border p-2 text-left">Status</th>
-                <th className="border p-2 text-left">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {educators.map(user => {
-                const last = user.lastLoginAt || user.updatedAt || user.createdAt
-                const statusInactive = isInactive(user)
-                return (
-                  <tr key={user._id} className="odd:bg-white even:bg-gray-50">
-                    <td className="border p-2">{user.name}</td>
-                    <td className="border p-2">{user.email}</td>
-                    <td className="border p-2">{last ? new Date(last).toLocaleDateString() : '—'}</td>
-                    <td className="border p-2">
-                      <span className={statusInactive ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
-                        {statusInactive ? 'inactive' : 'active'}
-                      </span>
-                    </td>
-                    <td className="border p-2">
-                      <button
-                        className={"px-3 py-1 rounded " + (statusInactive ? 'bg-green-500 text-white' : 'bg-red-500 text-white')}
-                        onClick={() => toggleActive(user._id, !statusInactive)}
-                      >
-                        {statusInactive ? 'Set Active' : 'Set Inactive'}
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      {/* 🔹 Toggle Buttons */}
+      <div className="mb-6 flex gap-4">
+        <button
+          onClick={() => setActiveView('students')}
+          className={`px-4 py-2 rounded ${
+            activeView === 'students'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200'
+          }`}
+        >
+          Students
+        </button>
+
+        <button
+          onClick={() => setActiveView('educators')}
+          className={`px-4 py-2 rounded ${
+            activeView === 'educators'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200'
+          }`}
+        >
+          Educators
+        </button>
+      </div>
+
+      {/* ================= STUDENTS ================= */}
+      {activeView === 'students' && (
+        <section className="mb-8 bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold mb-3">Students</h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border p-2">Name</th>
+                  <th className="border p-2">Email</th>
+                  <th className="border p-2">Enrolled Courses</th>
+                  <th className="border p-2">Last Login</th>
+                  <th className="border p-2">Status</th>
+                  <th className="border p-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map(user => {
+                  const last = user.lastLoginAt || user.updatedAt || user.createdAt
+                  const statusInactive = isInactive(user)
+                  return (
+                    <tr key={user._id}>
+                      <td className="border p-2">{user.name}</td>
+                      <td className="border p-2">{user.email}</td>
+                      <td className="border p-2">
+                        {user.enrolledCourses?.length ? (
+                          <ul className="list-disc pl-5">
+                            {user.enrolledCourses.map(cid => {
+                              const courseObj = typeof cid === 'object' ? cid : null
+                              const courseId = courseObj?._id || String(cid)
+                              const title =
+                                courseObj?.title ||
+                                courseMap.get(String(courseId)) ||
+                                'Unknown Course'
+                              return <li key={courseId}>{title}</li>
+                            })}
+                          </ul>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="border p-2">
+                        {last ? new Date(last).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="border p-2">
+                        <span className={statusInactive ? 'text-red-600' : 'text-green-600'}>
+                          {statusInactive ? 'inactive' : 'active'}
+                        </span>
+                      </td>
+                      <td className="border p-2">
+                        <button
+                          className={`px-3 py-1 rounded ${
+                            statusInactive ? 'bg-green-500' : 'bg-red-500'
+                          } text-white`}
+                          onClick={() => toggleActive(user._id, !statusInactive)}
+                        >
+                          {statusInactive ? 'Set Active' : 'Set Inactive'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* ================= EDUCATORS ================= */}
+      {activeView === 'educators' && (
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold mb-3">Educators</h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border p-2">Name</th>
+                  <th className="border p-2">Email</th>
+                  <th className="border p-2">Last Login</th>
+                  <th className="border p-2">Status</th>
+                  <th className="border p-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {educators.map(user => {
+                  const last = user.lastLoginAt || user.updatedAt || user.createdAt
+                  const statusInactive = isInactive(user)
+                  return (
+                    <tr key={user._id}>
+                      <td className="border p-2">{user.name}</td>
+                      <td className="border p-2">{user.email}</td>
+                      <td className="border p-2">
+                        {last ? new Date(last).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="border p-2">
+                        <span className={statusInactive ? 'text-red-600' : 'text-green-600'}>
+                          {statusInactive ? 'inactive' : 'active'}
+                        </span>
+                      </td>
+                      <td className="border p-2">
+                        <button
+                          className={`px-3 py-1 rounded ${
+                            statusInactive ? 'bg-green-500' : 'bg-red-500'
+                          } text-white`}
+                          onClick={() => toggleActive(user._id, !statusInactive)}
+                        >
+                          {statusInactive ? 'Set Active' : 'Set Inactive'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
 
 export default AdminDashboard
-

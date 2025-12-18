@@ -84,14 +84,16 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path='/' element={<Home />} />
-        <Route path='/login' element={!userData ? <Login /> : <Navigate to='/' />} />
+        // src/App.jsx
+        <Route path="/login" element={<Login />} />
         <Route path='/signup' element={!userData ? <SignUp /> : <Navigate to='/' />} />
         <Route path='/forgotpassword' element={<ForgotPassword />} />
         <Route path='/auth/callback' element={<AuthCallback />} />
 
+        
         {/* Signup OTP Routes */}
         <Route path="/signup-otp" element={<SignupOtp />} />
-        
+
         {/* Protected student routes */}
         <Route path='/profile' element={
           <ProtectedRoute allowedRoles={['student', 'educator', 'admin']}><Profile /></ProtectedRoute>

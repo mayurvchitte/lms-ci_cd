@@ -14,6 +14,7 @@ function Cardspage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const {courseData} = useSelector(state=>state.course)
   const navigate = useNavigate()
+  const [showButton, setShowButton] = useState(true);
 
   const CustomNextArrow = ({ onClick }) => (
     <button
@@ -88,6 +89,23 @@ function Cardspage() {
     setPopularCourses(courseData.slice(0,6));
   },[courseData])
 
+  // Hide the floating "View all Courses" button when the About section is visible
+  useEffect(() => {
+    const aboutEl = document.getElementById('about-us');
+    if (!aboutEl) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // if About is intersecting viewport, hide the button
+          setShowButton(!entry.isIntersecting);
+        });
+      },
+      { root: null, threshold: 0.1 }
+    );
+    observer.observe(aboutEl);
+    return () => observer.disconnect();
+  }, []);
+
   const handleCardClick = (course) => {
     setSelectedCourse(course);
     setIsModalOpen(true);
@@ -122,7 +140,9 @@ function Cardspage() {
           }
         </Slider>
       </div>
-      <button className=' absolute right-[5%] md:right-[9%] bottom-4 px-[24px] py-[14px] border-2 lg:border-white border-black bg-black lg:text-white text-black rounded-[10px] text-[20px] font-light flex gap-2 cursor-pointer' onClick={()=>navigate("/allcourses")}>View all Courses <SiViaplay className='w-[40px] h-[40px] lg:fill-white fill-black' /></button>
+      {showButton && (
+        <button className=' absolute right-[5%] md:right-[9%] bottom-4 px-[24px] py-[14px] border-2 lg:border-white border-black bg-black lg:text-white text-black rounded-[10px] text-[20px] font-light flex gap-2 cursor-pointer z-0 lg:z-10' onClick={()=>navigate("/allcourses")}>View all Courses <SiViaplay className='w-[40px] h-[40px] lg:fill-white fill-black' /></button>
+      )}
       
       {/* Course Detail Modal */}
       <CourseDetailModal 

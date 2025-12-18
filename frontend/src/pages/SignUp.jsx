@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import logo from '../assets/logo.jpeg'
+import logo from '../assets/apical logo.jpg'
 import google from '../assets/google.jpg'
 import axios from 'axios'
 import { serverUrl } from '../App'
@@ -31,6 +31,12 @@ function SignUp() {
   try {
     // Send ONLY email to the send-otp endpoint
     await axios.post(`${serverUrl}/api/auth/signup/send-otp`, { name, email, role });
+    // ✅ 2️⃣ START OTP SESSION HERE (THIS IS THE FIX)
+    sessionStorage.removeItem(`otpStart_${email}`);
+    sessionStorage.removeItem(`otpResend_${email}`);
+    sessionStorage.setItem(`otpStart_${email}`, Date.now());
+
+    toast.success("OTP sent to your email");
 
     // Pass the other info to OTP page via state
     navigate("/signup-otp", { state: { name, email, password, role } });
@@ -185,8 +191,8 @@ function SignUp() {
 
         {/* Right Side */}
         <div className='w-[50%] h-[100%] rounded-r-2xl bg-[black] md:flex items-center justify-center flex-col hidden'>
-          <img src={logo} className='w-30 shadow-2xl' alt="" />
-          <span className='text-[white] text-2xl'>SKILLSPHERE</span>
+          <img src={logo} className='w-30 shadow-2xl' alt="TechSproutLMS Logo" />
+          <span className='text-[white] text-2xl'>TechSproutLMS</span>
         </div>
       </form>
     </div>

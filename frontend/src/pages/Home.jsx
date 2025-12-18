@@ -120,12 +120,13 @@ function Home() {
 
   /* ---------------- ⭐ ADMIN VIEW OVERRIDE ---------------- */
   if (userData?.role === "admin") {
-    return (
-      <div className="w-[100%] overflow-hidden">
-        <Nav />
+  return (
+    <div className="w-[100%] overflow-hidden">
+      <Nav />
 
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <h2 className="text-2xl font-bold mb-4">Ongoing Courses</h2>
+      {/* spacing ONLY for admin */}
+      <div className="max-w-6xl mx-auto px-4 py-10 mt-20">
+        <h2 className="text-2xl font-bold mb-4">Ongoing Courses</h2>
 
           {allPublishedCourses.length > 0 ? (
             <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

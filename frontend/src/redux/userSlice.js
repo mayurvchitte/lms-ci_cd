@@ -9,13 +9,16 @@ const userSlice = createSlice({
     notifications: []
   },
   reducers: {
+    // ✅ ADD THIS
     startFetchingUser: (state) => {
       state.isFetchingUser = true;
     },
+
     setUserData: (state, action) => {
       state.userData = action.payload;
       state.isFetchingUser = false;
     },
+
     setWishlist: (state, action) => {
       state.wishlist = action.payload;
     },
@@ -41,6 +44,7 @@ const userSlice = createSlice({
 });
 
 export const {
+  // ✅ EXPORT IT
   startFetchingUser,
   setUserData,
   setWishlist,

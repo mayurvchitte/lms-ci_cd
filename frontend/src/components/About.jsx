@@ -7,7 +7,7 @@ import { BiSolidBadgeCheck } from "react-icons/bi";
 function About() {
   return (
     <section
-      id="about-us"
+      style={{ scrollMarginTop: '100px' }}
       className='w-[100vw] lg:h-[70vh] min-h-[50vh] flex flex-wrap items-center justify-center gap-2 mb-[30px]'
     >
       <div className='lg:w-[40%] md:w-[80%] w-[100%] h-[100%] flex items-center justify-center relative'>

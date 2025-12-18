@@ -1,29 +1,41 @@
+// src/pages/Login.jsx
 import React, { useState } from 'react';
-import logo from '../assets/logo.jpeg';
+import logo from '../assets/apical logo.jpg';
 import google from '../assets/google.jpg';
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { MdOutlineRemoveRedEye, MdRemoveRedEye } from "react-icons/md";
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { IoArrowBack } from "react-icons/io5";
+import { useNavigate, useLocation } from 'react-router-dom';
 import GoogleAuthService from '../../utils/GoogleAuth';
 import { toast } from 'react-toastify';
 import { ClipLoader } from 'react-spinners';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setUserData } from '../redux/userSlice';
-import { MdArrowBack } from "react-icons/md";
+import { clearRedirectPath } from '../redux/redirectSlice';
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const dispatch = useDispatch();
 
-  const redirectPath = location.state?.from || "/";
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const location = useLocation();
+
+  // ✅ read redirect target from Redux
+  const redirectPath = useSelector((state) => state.redirect.path);
+  const searchParams = new URLSearchParams(location.search);
+  const redirectParam = searchParams.get("redirect");
+  const stateFrom = location.state?.from?.pathname;
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      toast.error("Please enter email and password");
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await axios.post(
@@ -32,30 +44,32 @@ function Login() {
         { withCredentials: true }
       );
 
-      const user = result.data?.user || result.data;
-      dispatch(setUserData(user));
-      setLoading(false);
-      toast.success("Login successful!");
+      dispatch(setUserData(result.data));
+      toast.success("Login Successfully");
 
-      if (user.role === "admin") {
-        navigate("/admin/dashboard", { replace: true });
-      } else if (user.role === "educator") {
-        navigate("/educator/dashboard", { replace: true });
-      } else {
-        navigate("/courses", { replace: true });
-      }
+      // 🎯 Priority: stateFrom (from ProtectedRoute) > redirectParam > redirectPath > "/"
+      const target = stateFrom || redirectParam || redirectPath || "/";
 
+      dispatch(clearRedirectPath());  // reset after using it
+      navigate(target, { replace: true });
     } catch (error) {
-      console.error("Login error:", error);
+      console.log(error);
+      toast.error(error.response?.data?.message || "Login failed");
+    } finally {
       setLoading(false);
-      toast.error(error.response?.data?.message || "Invalid credentials");
     }
   };
 
   const googleLogin = async () => {
     setLoading(true);
     try {
-      const authUrl = GoogleAuthService.getAuthUrl();
+      const target = redirectPath || "/";
+
+      const stateForGoogle = {
+        from: { pathname: target },
+      };
+
+      const authUrl = GoogleAuthService.getAuthUrl(stateForGoogle);
       window.location.href = authUrl;
     } catch (error) {
       console.log(error);
@@ -67,20 +81,23 @@ function Login() {
   return (
     <div className='bg-[#dddbdb] w-[100vw] h-[100vh] flex items-center justify-center flex-col gap-3'>
       <form
-        className='w-[90%] md:w-200 h-150 bg-[white] shadow-xl rounded-2xl flex'
+        className='w-[90%] md:w-200 h-150 bg-[white] shadow-xl rounded-2xl flex relative'
         onSubmit={(e) => e.preventDefault()}
       >
-        <div className='md:w-[50%] w-[100%] h-[100%] flex flex-col items-center justify-center gap-4'>
+        {/* Left Side (Form Section) */}
+        <div className='md:w-[50%] w-[100%] h-[100%] flex flex-col items-center justify-center gap-4 relative'>
 
-          {/* 🔙 Back Button (Added Here) */}
-          <div className="w-[85%] flex items-start px-3">
-              <Link to="/" className="flex items-center gap-1 text-black font-semibold text-[15px]">
-               <MdArrowBack size={18} />
-               Home
-              </Link>
-          </div>
+          {/* Back Arrow Button */}
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="absolute top-5 left-5 text-black flex items-center gap-1 hover:text-gray-700 transition-all"
+          >
+            <IoArrowBack size={24} />
+            <span className="text-sm font-medium hidden sm:inline">Home</span>
+          </button>
 
-          <div>
+          <div className='mt-8'>
             <h1 className='font-semibold text-[black] text-2xl'>Welcome back</h1>
             <h2 className='text-[#999797] text-[18px]'>Login to your account</h2>
           </div>
@@ -94,7 +111,6 @@ function Login() {
               placeholder='Enter your email'
               onChange={(e) => setEmail(e.target.value)}
               value={email}
-              required
             />
           </div>
 
@@ -107,7 +123,6 @@ function Login() {
               placeholder='***********'
               onChange={(e) => setPassword(e.target.value)}
               value={password}
-              required
             />
             {!show ? (
               <MdOutlineRemoveRedEye
@@ -134,7 +149,7 @@ function Login() {
             className='text-[13px] cursor-pointer text-[#585757]'
             onClick={() => navigate("/forgotpassword")}
           >
-            Forgot your password?
+            Forget your password?
           </span>
 
           <div className='w-[80%] flex items-center gap-2'>
@@ -146,17 +161,17 @@ function Login() {
           </div>
 
           <div
-            className='w-[80%] h-[40px] border-1 border-[#d3d2d2] rounded-[5px] flex items-center justify-center'
+            className='w-[80%] h-[40px] border-1 border-[#d3d2d2] rounded-[5px] flex items-center justify-center cursor-pointer'
             onClick={googleLogin}
           >
-            <img src={google} alt="Google login" className='w-[25px]' />
+            <img src={google} alt="" className='w-[25px]' />
             <span className='text-[18px] text-gray-500'>Google</span>
           </div>
 
           <div className='text-[#6f6f6f]'>
             Don't have an account?{" "}
             <span
-              className='underline underline-offset-1 text-[black]'
+              className='underline underline-offset-1 text-[black] cursor-pointer'
               onClick={() => navigate("/signup")}
             >
               Sign up
@@ -164,9 +179,10 @@ function Login() {
           </div>
         </div>
 
+        {/* Right Side (Logo Section) */}
         <div className='w-[50%] h-[100%] rounded-r-2xl bg-[black] md:flex items-center justify-center flex-col hidden'>
-          <img src={logo} className='w-30 shadow-2xl' alt="Skill Sphere Logo" />
-          <span className='text-[white] text-2xl'>SKILL SPHERE</span>
+          <img src={logo} className='w-30 shadow-2xl' alt="TechSproutLMS Logo" />
+          <span className='text-[white] text-2xl'>TechSproutLMS</span>
         </div>
       </form>
     </div>

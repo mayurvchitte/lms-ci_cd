@@ -14,17 +14,32 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       </div>
     );
   }
-
-  // If not logged in or role not allowed, redirect to login
-  if (!userData || (allowedRoles && !allowedRoles.includes(userData.role))) {
+  // ⛔ Not logged in → send to login, BUT remember where they came from
+  if (!userData) {
     return (
       <Navigate
         to="/login"
-        state={{ from: location }} // Save attempted URL
-        replace={true}            // Replace to avoid history loop
+        state={{ from: location }}  // ⭐ this is what Login will read
+        replace
       />
     );
   }
+
+  // ⛔ Logged in but role not allowed
+  if (allowedRoles && !allowedRoles.includes(userData.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // If not logged in or role not allowed, redirect to login
+  // if (!userData || (allowedRoles && !allowedRoles.includes(userData.role))) {
+  //   return (
+  //     <Navigate
+  //       to="/login"
+  //       state={{ from: location }} // Save attempted URL
+  //       replace={true}            // Replace to avoid history loop
+  //     />
+  //   );
+  // }
 
   return children;
 };

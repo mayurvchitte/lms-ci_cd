@@ -1,10 +1,15 @@
+// src/CourseDetailModal.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoClose } from 'react-icons/io5';
 import { FaCheckCircle, FaStar } from 'react-icons/fa';
+import { useDispatch, useSelector } from 'react-redux';
+import { setRedirectPath } from "../redux/redirectSlice";
 
 const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { userData } = useSelector((state) => state.user);
 
   if (!isOpen || !courseData) return null;
 
@@ -16,18 +21,31 @@ const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
 
   const avgRating = calculateAverageRating(courseData.reviews);
 
-  // Extract learning points from lectures or use default points
-  const learningPoints = courseData.lectures?.slice(0, 5).map(lecture => lecture.lectureTitle) || [
-    "Master the fundamentals and advanced concepts",
-    "Build real-world projects from scratch",
-    "Learn industry best practices and techniques",
-    "Get hands-on experience with practical exercises",
-    "Gain skills to advance your career"
-  ];
+  const learningPoints =
+    courseData.lectures?.slice(0, 5).map((lecture) => lecture.lectureTitle) || [
+      "Master the fundamentals and advanced concepts",
+      "Build real-world projects from scratch",
+      "Learn industry best practices and techniques",
+      "Get hands-on experience with practical exercises",
+      "Gain skills to advance your career",
+    ];
 
   const handleStartSubscription = () => {
+    const target = `/viewcourse/${courseData._id}`;
+
+    if (userData) {
+      // ✅ Already logged in → go straight to course page
+      onClose();
+      navigate(target);
+      return;
+    }
+
+    // ✅ Not logged in:
+    // 1. Store the redirect in Redux
+    // 2. Go to login
+    dispatch(setRedirectPath(target));
     onClose();
-    navigate('/login');
+    navigate("/login");
   };
 
   const handleOverlayClick = (e) => {
@@ -37,8 +55,8 @@ const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+    <div
+      className="fixed top-[90px] bottom-0 left-0 right-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto"
       onClick={handleOverlayClick}
     >
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative animate-fadeIn">
@@ -59,7 +77,7 @@ const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-          
+
           {/* Category Badge */}
           <div className="absolute top-4 left-4">
             <span className="px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full text-sm font-semibold text-gray-800 capitalize">
@@ -73,12 +91,11 @@ const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
           {/* Title and Rating */}
           <div className="space-y-2">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              {courseData.title} <span className="text-lg text-gray-600"> By {courseData.educator}</span>
+              {courseData.title}{" "}
+              <span className="text-lg text-gray-600">By {courseData.educator}</span>
             </h2>
             {courseData.subTitle && (
-              <p className="text-gray-600 text-lg">
-                {courseData.subTitle}
-              </p>
+              <p className="text-gray-600 text-lg">{courseData.subTitle}</p>
             )}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 text-yellow-500">
@@ -95,9 +112,7 @@ const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
           {courseData.description && (
             <div className="space-y-2">
               <h3 className="text-xl font-semibold text-gray-900">About this course</h3>
-              <p className="text-gray-700 leading-relaxed">
-                {courseData.description}
-              </p>
+              <p className="text-gray-700 leading-relaxed">{courseData.description}</p>
             </div>
           )}
 
@@ -122,7 +137,7 @@ const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
             <div>
               <span className="font-semibold text-gray-800">
                 {courseData.lectures?.length || 0}
-              </span>{' '}
+              </span>{" "}
               lectures
             </div>
             <div>
@@ -136,10 +151,8 @@ const CourseDetailModal = ({ isOpen, onClose, courseData }) => {
           {/* Price and CTA */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-gray-900">
-                ₹{courseData.price}
-              </span>
-              <span className="text-lg text-gray-400 line-through">₹599</span>
+              <span className="text-3xl font-bold text-gray-900">₹{courseData.price}</span>
+              <span className="text-lg text-gray-400 line-through">₹15999</span>
             </div>
             <button
               onClick={handleStartSubscription}
