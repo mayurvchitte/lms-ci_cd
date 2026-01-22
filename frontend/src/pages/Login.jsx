@@ -7,7 +7,7 @@ import { serverUrl } from '../App';
 import { MdOutlineRemoveRedEye, MdRemoveRedEye } from "react-icons/md";
 import { IoArrowBack } from "react-icons/io5";
 import { useNavigate, useLocation } from 'react-router-dom';
-import GoogleAuthService from '../../utils/GoogleAuth';
+import googleAuth from '../utils/googleAuth';
 import { toast } from 'react-toastify';
 import { ClipLoader } from 'react-spinners';
 import { useDispatch, useSelector } from 'react-redux';
@@ -69,7 +69,7 @@ function Login() {
         from: { pathname: target },
       };
 
-      const authUrl = GoogleAuthService.getAuthUrl(stateForGoogle);
+      const authUrl = googleAuth.getAuthUrl(stateForGoogle);
       window.location.href = authUrl;
     } catch (error) {
       console.log(error);

@@ -35,11 +35,11 @@ export const signUp = async (req, res) => {
     const token = await genToken(user._id);
 
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000
+   });
 
     return res.status(201).json({ message: "Signup successful", user });
 
@@ -72,12 +72,13 @@ export const login=async(req,res)=>{
                     console.warn('Failed to update lastLoginAt:', e)
                 }
 
-                res.cookie("token",token,{
-            httpOnly:true,
-            secure:false,
-            sameSite: "Lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        })
+               res.cookie("token", token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "Lax",
+                maxAge: 7 * 24 * 60 * 60 * 1000
+               });
+
         return res.status(200).json(user)
 
     } catch (error) {
@@ -93,10 +94,11 @@ export const logOut = async(req,res)=>{
     try {
         // Clear cookie with same options as set cookie
         res.clearCookie("token", {
-            httpOnly: true,
-            secure: false,
-            sameSite: "Lax",
-        })
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Lax",
+        });
+
         return res.status(200).json({message:"logOut Successfully"})
     } catch (error) {
         return res.status(500).json({message:`logout Error ${error}`})
@@ -122,17 +124,18 @@ export const googleSignup = async (req,res) => {
                     console.warn('Failed to update lastLoginAt for googleSignup:', e)
                 }
 
-                let token =await genToken(user._id)
-        res.cookie("token",token,{
-            httpOnly:true,
-            secure:false,
-            sameSite: "Strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        })
-        return res.status(200).json(user)
+                let token = await genToken(user._id)
 
+                res.cookie("token", token, {
+                httpOnly: true,
+                 secure: process.env.NODE_ENV === "production",
+                 sameSite: "Lax",
+                maxAge: 7 * 24 * 60 * 60 * 1000
+                 });
 
-    } catch (error) {
+                 return res.status(200).json(user)
+
+              } catch (error) {
         console.log(error)
          return res.status(500).json({message:`googleSignup  ${error}`})
     }
@@ -270,11 +273,12 @@ export const googleTokenExchange = async (req,res) => {
 
                 // Set cookie
                 res.cookie("token", token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: "Strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "Lax", // ✅ REQUIRED
+                maxAge: 7 * 24 * 60 * 60 * 1000
+                });
+
 
         console.log('Backend: JWT set and response sent for user:', user._id);
         return res.status(200).json({

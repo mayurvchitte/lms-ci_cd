@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import GoogleAuthService from "../../utils/GoogleAuth";
+import googleAuth from "../utils/googleAuth";
 import { toast } from "react-toastify";
 import { ClipLoader } from "react-spinners";
 import { useDispatch, useSelector } from "react-redux";
@@ -48,7 +48,7 @@ const AuthCallback = () => {
           return;
         }
 
-        const data = await GoogleAuthService.handleCallback(code);
+        const data = await googleAuth.handleCallback(code);
 
         // Assume API returns { user: {...}, token?: ... }
         dispatch(setUserData(data.user));

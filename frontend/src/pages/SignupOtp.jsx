@@ -83,7 +83,7 @@ function SignupOtp() {
         { withCredentials: true }
       );
 
-      dispatch(setUserData(res.data));
+      dispatch(setUserData(res.data.user));
       toast.success("Signup successful!");
 
       // Clean OTP sessionStorage
@@ -91,7 +91,7 @@ function SignupOtp() {
       sessionStorage.removeItem(`otpResend_${email}`);
 
       setTimeout(() => {
-        window.location.replace("/");
+        navigate("/");
       }, 100);
 
     } catch (err) {

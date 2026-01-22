@@ -2,7 +2,7 @@ import { serverUrl } from '../src/App';
 
 // Simple Google OAuth implementation for frontend
 // Use environment variable for client ID to match backend
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '553166150945-79enoi6e3ged6mpj78ijjqrl00b53l31.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '614176724297-qtr9r7k9jg967vh88r7803ph1pvtqr0e.apps.googleusercontent.com';
 const REDIRECT_URI = 'http://localhost:5173/auth/callback';
 const SCOPE = 'openid email profile';
 
