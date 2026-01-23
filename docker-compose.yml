@@ -1,6 +1,17 @@
 version: "3.9"
 
 services:
+  mongodb:
+    image: mongo:6
+    container_name: lms-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - lms-network
+    restart: always
+
   backend:
     image: mahesh1925/lms-backend:latest
     container_name: lms-backend
@@ -8,9 +19,11 @@ services:
       - "8000:8000"
     env_file:
       - ${BACKEND_ENV}
-    restart: always
+    depends_on:
+      - mongodb
     networks:
       - lms-network
+    restart: always
 
   frontend:
     image: mahesh1925/lms-frontend:latest
@@ -21,11 +34,14 @@ services:
       - ${FRONTEND_ENV}
     depends_on:
       - backend
-    restart: always
     networks:
       - lms-network
+    restart: always
 
 networks:
   lms-network:
     driver: bridge
+
+volumes:
+  mongo-data:
 
