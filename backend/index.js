@@ -2,10 +2,14 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
-import cookieParser from "cookie-parser";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
+// -------------------------------
+// Import DB & Routes
+// -------------------------------
 import connectDb from "./configs/db.js";
+
 import authRouter from "./routes/authRoute.js";
 import liveRouter from "./routes/liveRoute.js";
 import userRouter from "./routes/userRoute.js";
@@ -15,38 +19,40 @@ import aiRouter from "./routes/aiRoute.js";
 import reviewRouter from "./routes/reviewRoute.js";
 import adminRouter from "./routes/adminRoute.js";
 import videoRouter from "./routes/videoRoute.js";
-import notesRouter from "./routes/notesRoute.js"; // Notes route
+import notesRouter from "./routes/notesRoute.js";
 
+// -------------------------------
+// Load Environment Variables
+// -------------------------------
 dotenv.config();
 
-const port = process.env.PORT || 8000;
+// -------------------------------
+// App & Server Setup
+// -------------------------------
 const app = express();
+const port = process.env.PORT || 8000;
+const httpServer = http.createServer(app);
 
 // -------------------------------
-// ✅ Allowed Frontend URLs
+// Allowed Origins (CORS)
 // -------------------------------
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL   = process.env.FRONTEND_URL || "http://localhost:5173";
 const FRONTEND_URL_2 = process.env.FRONTEND_URL_2 || "http://localhost:5175";
-const PROD_URL = process.env.PROD_URL || "https://techsproutlms.com";
-const API_SELF = process.env.API_SELF || `http://localhost:${port}`;
+const PROD_URL       = process.env.PROD_URL || "https://example.com";
+const API_SELF       = process.env.API_SELF || `http://localhost:${port}`;
 
-// -------------------------------
-// 🔥 FINAL CORS WHITELIST (FIXED)
-// -------------------------------
 const allowedOrigins = [
   FRONTEND_URL,
   FRONTEND_URL_2,
-  API_SELF,
   PROD_URL,
-  "https://techsproutlms.com",  // Always allow production domain
+  API_SELF,
+  "https://techsproutlms.com",
   "http://techsproutlms.com",
 ].filter(Boolean);
 
 // -------------------------------
-// ✅ Setup server + socket.io
+// Socket.IO Setup
 // -------------------------------
-const httpServer = http.createServer(app);
-
 const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
@@ -56,28 +62,32 @@ const io = new Server(httpServer, {
 });
 
 // -------------------------------
-// ✅ Middleware
+// Express Middleware
 // -------------------------------
 app.set("trust proxy", 1);
-app.use(express.json());
+
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // Allow mobile apps, curl, etc.
+      if (!origin) return callback(null, true); // allow Postman, curl, mobile apps
       if (allowedOrigins.includes(origin)) return callback(null, true);
 
-      console.log("❌ Blocked by CORS:", origin);
-      return callback(new Error("CORS not allowed from origin: " + origin), false);
+      console.error("❌ CORS blocked:", origin);
+      return callback(
+        new Error("CORS not allowed from origin: " + origin),
+        false
+      );
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
 // -------------------------------
-// ✅ API Routes
+// API Routes
 // -------------------------------
 app.use("/api/auth", authRouter);
 app.use("/api/live", liveRouter);
@@ -91,17 +101,17 @@ app.use("/api/videos", videoRouter);
 app.use("/api/notes", notesRouter);
 
 // -------------------------------
-// ✅ Health Check
+// Health Check
 // -------------------------------
 app.get("/", (req, res) => {
-  res.send("✅ Server running successfully!");
+  res.status(200).send("✅ LMS Backend Server is running!");
 });
 
 // -------------------------------
-// ✅ WebSocket Events
+// Socket.IO Events
 // -------------------------------
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log("🔌 User connected:", socket.id);
 
   socket.on("join-room", (roomId) => {
     socket.join(roomId);
@@ -138,15 +148,21 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    console.log("❌ User disconnected:", socket.id);
   });
 });
 
 // -------------------------------
-// ✅ Start Server
+// Start Server (Fail-fast DB)
 // -------------------------------
-httpServer.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
-  connectDb();
-});
+connectDb()
+  .then(() => {
+    httpServer.listen(port, () => {
+      console.log(`🚀 Server running on port ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ Database connection failed:", err);
+    process.exit(1);
+  });
 

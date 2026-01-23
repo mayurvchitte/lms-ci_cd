@@ -11,8 +11,6 @@ services:
     restart: always
     networks:
       - lms-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   frontend:
     image: mahesh1925/lms-frontend:latest
