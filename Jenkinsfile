@@ -50,18 +50,31 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([
-                    file(credentialsId: 'backend-env', variable: 'B_ENV'),
-                    file(credentialsId: 'frontend-env', variable: 'F_ENV')
+                    file(credentialsId: 'backend-env', variable: 'BACKEND_ENV'),
+                    file(credentialsId: 'frontend-env', variable: 'FRONTEND_ENV')
                 ]) {
                     sh '''
-                      cp "$B_ENV" backend/.env
-                      cp "$F_ENV" frontend/.env
+                      echo "🚀 Deploying using Jenkins secret env files..."
+
+                      export BACKEND_ENV="$BACKEND_ENV"
+                      export FRONTEND_ENV="$FRONTEND_ENV"
 
                       docker compose down || true
-                      docker compose up -d --force-recreate
+                      docker compose up -d --force-recreate --remove-orphans
+
+                      echo "✅ Deployment completed successfully"
                     '''
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ CI/CD Pipeline succeeded!"
+        }
+        failure {
+            echo "❌ CI/CD Pipeline failed!"
         }
     }
 }
