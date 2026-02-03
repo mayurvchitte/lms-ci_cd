@@ -33,9 +33,11 @@ pipeline {
                     file(credentialsId: 'frontend-env', variable: 'FRONTEND_ENV')
                 ]) {
                     sh '''
+                        set -e
+
                         echo "🏗️ Building backend image..."
                         docker build \
-                          -t $BACKEND_IMAGE:latest \
+                          -t ${BACKEND_IMAGE}:latest \
                           -f backend/Dockerfile.backend backend
 
                         echo "==============================="
@@ -44,14 +46,19 @@ pipeline {
                         cat "$FRONTEND_ENV"
                         echo "==============================="
 
-                        echo "🏗️ Building frontend image (NO CACHE, Vite build-time envs)..."
+                        echo "📥 Loading frontend env vars..."
+                        export VITE_GOOGLE_CLIENT_ID=$(grep '^VITE_GOOGLE_CLIENT_ID=' "$FRONTEND_ENV" | cut -d= -f2-)
+                        export VITE_FIREBASE_APIKEY=$(grep '^VITE_FIREBASE_APIKEY=' "$FRONTEND_ENV" | cut -d= -f2-)
+                        export VITE_API_URL=$(grep '^VITE_API_URL=' "$FRONTEND_ENV" | cut -d= -f2-)
 
-                        docker build --no-cache \
-                          --build-arg VITE_GOOGLE_CLIENT_ID=$(grep VITE_GOOGLE_CLIENT_ID "$FRONTEND_ENV" | cut -d= -f2) \
-                          --build-arg VITE_FIREBASE_APIKEY=$(grep VITE_FIREBASE_APIKEY "$FRONTEND_ENV" | cut -d= -f2) \
-                          --build-arg VITE_API_URL=$(grep VITE_API_URL "$FRONTEND_ENV" | cut -d= -f2) \
-                          -t $FRONTEND_IMAGE:latest \
-                          -f frontend/Dockerfile.frontend frontend
+                        echo "🏗️ Building frontend image (Buildx, no cache)..."
+                        docker buildx build --no-cache \
+                          --build-arg VITE_GOOGLE_CLIENT_ID="$VITE_GOOGLE_CLIENT_ID" \
+                          --build-arg VITE_FIREBASE_APIKEY="$VITE_FIREBASE_APIKEY" \
+                          --build-arg VITE_API_URL="$VITE_API_URL" \
+                          -t ${FRONTEND_IMAGE}:latest \
+                          -f frontend/Dockerfile.frontend \
+                          frontend
                     '''
                 }
             }
@@ -70,11 +77,13 @@ pipeline {
                     )
                 ]) {
                     sh '''
+                        set -e
+
                         echo "🔐 Logging into Docker Hub..."
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-                        docker push $BACKEND_IMAGE:latest
-                        docker push $FRONTEND_IMAGE:latest
+                        docker push ${BACKEND_IMAGE}:latest
+                        docker push ${FRONTEND_IMAGE}:latest
 
                         docker logout
                     '''
@@ -92,6 +101,8 @@ pipeline {
                     file(credentialsId: 'frontend-env', variable: 'FRONTEND_ENV')
                 ]) {
                     sh '''
+                        set -e
+
                         echo "🚀 Deploying containers using Jenkins secret env files..."
 
                         export BACKEND_ENV="$BACKEND_ENV"
