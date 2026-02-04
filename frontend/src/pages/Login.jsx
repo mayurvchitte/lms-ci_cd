@@ -7,12 +7,12 @@ import { serverUrl } from '../App';
 import { MdOutlineRemoveRedEye, MdRemoveRedEye } from "react-icons/md";
 import { IoArrowBack } from "react-icons/io5";
 import { useNavigate, useLocation } from 'react-router-dom';
-import googleAuth from '../utils/googleAuth';
 import { toast } from 'react-toastify';
 import { ClipLoader } from 'react-spinners';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUserData } from '../redux/userSlice';
 import { clearRedirectPath } from '../redux/redirectSlice';
+import { GoogleLogin } from '@react-oauth/google';
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -57,24 +57,6 @@ function Login() {
       toast.error(error.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const googleLogin = async () => {
-    setLoading(true);
-    try {
-      const target = redirectPath || "/";
-
-      const stateForGoogle = {
-        from: { pathname: target },
-      };
-
-      const authUrl = googleAuth.getAuthUrl(stateForGoogle);
-      window.location.href = authUrl;
-    } catch (error) {
-      console.log(error);
-      setLoading(false);
-      toast.error("Google sign-in failed. Please try again.");
     }
   };
 
@@ -160,13 +142,34 @@ function Login() {
             <div className='w-[25%] h-[0.5px] bg-[#c4c4c4]'></div>
           </div>
 
-          <div
-            className='w-[80%] h-[40px] border-1 border-[#d3d2d2] rounded-[5px] flex items-center justify-center cursor-pointer'
-            onClick={googleLogin}
-          >
-            <img src={google} alt="" className='w-[25px]' />
-            <span className='text-[18px] text-gray-500'>Google</span>
-          </div>
+          <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+               setLoading(true);
+               try {
+                 const result = await axios.post(
+                `${serverUrl}/api/auth/google/token`,
+                  {
+                   token: credentialResponse.credential,
+                      },
+                   { withCredentials: true }
+                  );
+
+                 dispatch(setUserData(result.data));
+                 toast.success("Login successfully");
+
+               const target = redirectPath || "/";
+                dispatch(clearRedirectPath());
+                navigate(target, { replace: true });
+                 } catch (error) {
+                console.log(error);
+                toast.error("Google login failed");
+              } finally {
+                setLoading(false);
+              }
+               }}
+            onError={() => {
+              toast.error("Google login failed");
+              }} />
 
           <div className='text-[#6f6f6f]'>
             Don't have an account?{" "}

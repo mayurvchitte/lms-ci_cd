@@ -5,7 +5,9 @@ import bcrypt from "bcryptjs"
 import User from "../models/userModel.js"
 
 import sendMail from "../configs/Mail.js"
+import { OAuth2Client } from "google-auth-library";
 
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const signUp = async (req, res) => {
   try {
@@ -202,95 +204,66 @@ export const resetPassword = async (req,res) => {
     }
 }
 
-export const googleTokenExchange = async (req,res) => {
-    try {
-        const { code, redirect_uri } = req.body;
-        console.log('Backend: Received Google code for exchange:', code ? 'present' : 'missing');
+export const googleTokenExchange = async (req, res) => {
+  try {
+    const { token } = req.body;
 
-        // Exchange code for tokens with Google
-        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                client_id: process.env.GOOGLE_CLIENT_ID,
-                client_secret: process.env.GOOGLE_CLIENT_SECRET,
-                code: code,
-                grant_type: 'authorization_code',
-                redirect_uri: redirect_uri,
-            }),
-        });
-
-        if (!tokenResponse.ok) {
-            const errorText = await tokenResponse.text();
-            console.error('Backend: Google token exchange failed:', tokenResponse.status, errorText);
-            throw new Error('Failed to exchange code for token');
-        }
-
-        const tokens = await tokenResponse.json();
-        console.log('Backend: Google tokens received successfully');
-
-        // Get user info using the access token
-        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-            headers: {
-                'Authorization': `Bearer ${tokens.access_token}`
-            }
-        });
-
-        if (!userInfoResponse.ok) {
-            console.error('Backend: Failed to fetch user info:', userInfoResponse.status);
-            throw new Error('Failed to get user info');
-        }
-
-        const userInfo = await userInfoResponse.json();
-        console.log('Backend: User info fetched:', { name: userInfo.name, email: userInfo.email });
-
-        // Check if user exists, if not create one
-        let user = await User.findOne({ email: userInfo.email });
-        if (!user) {
-            user = await User.create({
-                name: userInfo.name,
-                email: userInfo.email,
-                role: "student", // default role
-            });
-            console.log('Backend: New user created with email:', userInfo.email);
-        } else {
-            console.log('Backend: Existing user found with email:', userInfo.email);
-        }
-
-        // Generate JWT token
-        const token = await genToken(user._id);
-
-                // Update lastLoginAt and ensure isActive exists
-                try {
-                    user.lastLoginAt = Date.now()
-                    if (typeof user.isActive === 'undefined') user.isActive = true
-                    await user.save()
-                } catch (e) {
-                    console.warn('Failed to update lastLoginAt for googleTokenExchange:', e)
-                }
-
-                // Set cookie
-                res.cookie("token", token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "Lax", // ✅ REQUIRED
-                maxAge: 7 * 24 * 60 * 60 * 1000
-                });
-
-
-        console.log('Backend: JWT set and response sent for user:', user._id);
-        return res.status(200).json({
-            user: user,
-            access_token: tokens.access_token
-        });
-
-    } catch (error) {
-        console.error('Backend: Google token exchange error:', error);
-        return res.status(500).json({ message: `Google authentication failed: ${error.message}` });
+    if (!token) {
+      return res.status(400).json({ message: "Google token missing" });
     }
-}
+
+    // ✅ Verify Google ID Token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const {
+      email,
+      name,
+      picture,
+      sub: googleId,
+    } = payload;
+
+    // 🔍 Find or create user
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        name,
+        email,
+        role: "student",
+        googleId,
+        provider: "google",
+        isVerified: true,
+      });
+    }
+
+    // Update login info
+    user.lastLoginAt = Date.now();
+    if (typeof user.isActive === "undefined") user.isActive = true;
+    await user.save();
+
+    // 🔐 Generate JWT
+    const jwtToken = await genToken(user._id);
+
+    // 🍪 Set cookie
+    res.cookie("token", jwtToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json(user);
+
+  } catch (error) {
+    console.error("Google login failed:", error);
+    return res.status(500).json({ message: "Google login failed" });
+  }
+};
 
 export const forgotPassword = async (req, res) => {
   try {
