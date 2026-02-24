@@ -19,7 +19,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'master',
-                    url: 'https://github.com/maheshpalakonda/lms-ci_cd.git',
+                    url: 'https://github.com/mayurvchitte/lms-ci_cd.git',
                     credentialsId: 'github-pat'
             }
         }
